@@ -1,0 +1,127 @@
+# ─────────────────────────────────────────────────────────────
+# configs/ingestion_config.yaml
+#
+# Single source of truth for all ingestion settings.
+# No hardcoded values in any ingestion client.
+# To add a new signal — edit this file only, no code changes needed.
+# ─────────────────────────────────────────────────────────────
+
+# ── Global settings ───────────────────────────────────────────
+global:
+  start_date: "2019-01-01"
+  resample_frequency: "W-FRI"   # Weekly, anchored on Friday
+  lookback_weeks: 4             # How many weeks the model looks back
+  forecast_horizon_weeks: 3     # How far ahead we predict
+
+# ── Supabase table names ──────────────────────────────────────
+tables:
+  macro_signals:  "macro_signals"
+  market_prices:  "market_prices"
+  fear_index:     "fear_index"
+  news_sentiment: "news_sentiment"
+
+# ── FRED ──────────────────────────────────────────────────────
+fred:
+  base_url: "https://api.stlouisfed.org/fred/series/observations"
+  series:
+    # ── Existing macro signals ────────────────────────────────
+    import_price_index:       "IR"
+    ppi_manufacturing:        "PCUOMFGOMFG"
+    industrial_production:    "INDPRO"
+    cpi_all:                  "CPIAUCSL"
+    goods_imports:            "IMPGSC1"
+    manufacturing_employment: "MANEMP"
+    new_orders:               "AMTMNO"
+    # ── Energy ───────────────────────────────────────────────
+    crude_oil_price:          "DCOILWTICO"   # WTI crude oil daily price
+    natural_gas_price:        "DHHNGSP"      # Henry Hub natural gas price
+    # ── Construction + housing ───────────────────────────────
+    housing_starts:           "HOUST"        # New housing units started
+    # ── Trade + shipping proxies ─────────────────────────────
+    export_price_index:       "IQ"           # US export price index
+    trade_balance:            "BOPGSTB"      # US trade balance goods + services
+    # ── Labour + capacity ────────────────────────────────────
+    capacity_utilization:     "TCU"          # % of industrial capacity in use
+    unemployment_rate:        "UNRATE"       # Labour market stress signal
+
+# ── Alpha Vantage ─────────────────────────────────────────────
+alpha_vantage:
+  base_url: "https://www.alphavantage.co/query"
+  rate_limit_pause_seconds: 12    # Free tier: 5 requests/min
+  commodity_interval: "monthly"
+  commodities:
+    copper:    "COPPER"
+    wheat:     "WHEAT"
+    aluminum:  "ALUMINUM"
+    # crude_oil and lumber require Alpha Vantage premium — removed
+  etfs:
+    industrials:      "XLI"
+    materials:        "XLB"
+    consumer_staples: "XLP"
+    energy:           "XLE"
+
+# ── Polymarket ────────────────────────────────────────────────
+polymarket:
+  gamma_base_url: "https://gamma-api.polymarket.com"
+  markets_limit: 100
+  historical_days_back: 365
+  disruption_keywords:
+    - "tariff"
+    - "trade war"
+    - "supply chain"
+    - "import"
+    - "export"
+    - "sanctions"
+    - "embargo"
+    - "port"
+    - "freight"
+    - "logistics"
+
+# ── NewsAPI ───────────────────────────────────────────────────
+newsapi:
+  base_url: "https://newsapi.org/v2/everything"
+  days_back: 29           # Free tier max is 30 days
+  page_size: 100          # Free tier max per request
+  language: "en"
+  sort_by: "publishedAt"
+  queries:
+    - "supply chain disruption tariff"
+    - "port strike freight shortage"
+    - "trade war sanctions manufacturing"
+    - "import export disruption logistics"
+  disruption_keywords:
+    - "tariff"
+    - "supply chain"
+    - "shortage"
+    - "disruption"
+    - "port strike"
+    - "freight"
+    - "logistics"
+    - "trade war"
+    - "sanctions"
+    - "embargo"
+    - "manufacturing halt"
+    - "factory shutdown"
+    - "inventory shortage"
+    - "shipping delay"
+    - "import ban"
+    - "export restriction"
+
+# ── SEC EDGAR ─────────────────────────────────────────────────
+sec_edgar:
+  search_url: "https://efts.sec.gov/LATEST/search-index"
+  days_back: 90
+  form_types: "10-K,10-Q"
+  results_per_query: 20
+  user_agent: "tariff-shock-forecaster research@example.com"
+  queries:
+    - "supply chain disruption"
+    - "tariff impact operations"
+    - "logistics shortage"
+    - "manufacturing disruption"
+
+# ── Combined sentiment scoring weights ────────────────────────
+sentiment_scoring:
+  newsapi_weight: 0.60    # Real-time news signal
+  sec_weight: 0.40        # Formal corporate disclosures
+  sec_normalise_cap: 20   # Max filings/week before normalising to 100
