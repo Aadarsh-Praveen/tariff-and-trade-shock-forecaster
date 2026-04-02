@@ -6,8 +6,8 @@ a typed object. Every ingestion client imports from here.
 
 Usage:
     from src.utils.ingestion_config import cfg
-    series = cfg.fred.series
-    keywords = cfg.newsapi.disruption_keywords
+    series   = cfg.fred.series
+    anchors  = cfg.target.disruption_anchors
 """
 
 import os
@@ -106,6 +106,22 @@ class SentimentScoringConfig:
 
 
 @dataclass
+class TargetRulesConfig:
+    import_price_pct_4w_threshold: float
+    new_orders_pct_4w_threshold: float
+    industrials_pct_4w_threshold: float
+    copper_abs_pct_4w_threshold: float
+
+
+@dataclass
+class TargetConfig:
+    forecast_horizon_weeks: int
+    min_rules_to_trigger: int
+    rules: TargetRulesConfig
+    disruption_anchors: List[Dict]   # list of {start, end, event}
+
+
+@dataclass
 class IngestionConfig:
     global_: GlobalConfig
     tables: TablesConfig
@@ -115,10 +131,12 @@ class IngestionConfig:
     newsapi: NewsAPIConfig
     sec_edgar: SecEdgarConfig
     sentiment_scoring: SentimentScoringConfig
+    target: TargetConfig
 
 
 def _parse(raw: dict) -> IngestionConfig:
     g = raw["global"]
+    t = raw["target"]
     return IngestionConfig(
         global_=GlobalConfig(
             start_date=g["start_date"],
@@ -165,6 +183,17 @@ def _parse(raw: dict) -> IngestionConfig:
             newsapi_weight=raw["sentiment_scoring"]["newsapi_weight"],
             sec_weight=raw["sentiment_scoring"]["sec_weight"],
             sec_normalise_cap=raw["sentiment_scoring"]["sec_normalise_cap"],
+        ),
+        target=TargetConfig(
+            forecast_horizon_weeks=t["forecast_horizon_weeks"],
+            min_rules_to_trigger=t["min_rules_to_trigger"],
+            rules=TargetRulesConfig(
+                import_price_pct_4w_threshold=t["rules"]["import_price_pct_4w_threshold"],
+                new_orders_pct_4w_threshold=t["rules"]["new_orders_pct_4w_threshold"],
+                industrials_pct_4w_threshold=t["rules"]["industrials_pct_4w_threshold"],
+                copper_abs_pct_4w_threshold=t["rules"]["copper_abs_pct_4w_threshold"],
+            ),
+            disruption_anchors=t["disruption_anchors"],
         ),
     )
 

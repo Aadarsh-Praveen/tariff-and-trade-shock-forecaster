@@ -1,76 +1,150 @@
 # .github/workflows/daily_ingestion.yml
 #
-# Runs all 4 ingestion clients every day at 06:00 UTC automatically.
-# Can also be triggered manually from the GitHub Actions tab.
+# Full daily pipeline:
+#   1. Ingest fresh data from all sources
+#   2. Rebuild feature matrix
+#   3. Run model inference → save predictions to Supabase
 #
-# Setup required (one time only):
-#   GitHub repo → Settings → Secrets and variables → Actions → New secret
-#   Add each key listed in the "Set environment variables" step below.
+# Model retraining is NOT run daily — it runs weekly on Sundays
+# to avoid overfitting on noisy recent data.
+#
+# Setup (one time):
+#   GitHub repo → Settings → Secrets → Actions → New secret
+#   Add: FRED_API_KEY, ALPHA_VANTAGE_API_KEY, NEWSAPI_KEY,
+#        SUPABASE_URL, SUPABASE_KEY
 
-name: Daily data ingestion
+name: Daily data pipeline
 
 on:
   schedule:
     - cron: "0 6 * * *"    # Every day at 06:00 UTC
-  workflow_dispatch:         # Manual trigger from GitHub Actions tab
+  workflow_dispatch:         # Manual trigger from Actions tab
+
+env:
+  SUPABASE_URL:          ${{ secrets.SUPABASE_URL }}
+  SUPABASE_KEY:          ${{ secrets.SUPABASE_KEY }}
+  FRED_API_KEY:          ${{ secrets.FRED_API_KEY }}
+  ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+  NEWSAPI_KEY:           ${{ secrets.NEWSAPI_KEY }}
+  LOG_LEVEL:             INFO
+  ENVIRONMENT:           production
 
 jobs:
+
+  # ── Job 1: Ingest all data sources ─────────────────────────
   ingest:
-    name: Run all ingestion clients
+    name: Ingest data
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
+      - uses: actions/checkout@v4
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
 
       - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
+        run: pip install --upgrade pip && pip install -r requirements.txt
 
-      - name: Run FRED ingestion
-        env:
-          FRED_API_KEY:  ${{ secrets.FRED_API_KEY }}
-          SUPABASE_URL:  ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY:  ${{ secrets.SUPABASE_KEY }}
-          LOG_LEVEL:     INFO
-          ENVIRONMENT:   production
+      - name: FRED ingestion
         run: PYTHONPATH=$(pwd) python -m src.ingestion.fred_client
 
-      - name: Run Alpha Vantage ingestion
-        env:
-          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
-          SUPABASE_URL:          ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY:          ${{ secrets.SUPABASE_KEY }}
-          LOG_LEVEL:             INFO
-          ENVIRONMENT:           production
+      - name: Alpha Vantage ingestion
         run: PYTHONPATH=$(pwd) python -m src.ingestion.alpha_client
 
-      - name: Run Polymarket ingestion
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          LOG_LEVEL:    INFO
-          ENVIRONMENT:  production
+      - name: Polymarket ingestion
         run: PYTHONPATH=$(pwd) python -m src.ingestion.polymarket_client
 
-      - name: Run NewsAPI + SEC ingestion
+      - name: LLM signal extraction
         env:
-          NEWSAPI_KEY:  ${{ secrets.NEWSAPI_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          LOG_LEVEL:    INFO
-          ENVIRONMENT:  production
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: PYTHONPATH=$(pwd) python -m src.ingestion.llm_signals
+
+      - name: NewsAPI + SEC ingestion
         run: PYTHONPATH=$(pwd) python -m src.ingestion.news_client
 
-      - name: Log completion
+  # ── Job 2: Feature engineering ─────────────────────────────
+  features:
+    name: Build feature matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: ingest        # only runs after ingestion completes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Run feature pipeline
+        run: PYTHONPATH=$(pwd) python -m src.features.pipeline
+
+      - name: Rebuild target variable
+        run: PYTHONPATH=$(pwd) python -m src.features.target_variable
+
+  # ── Job 3: Model inference ──────────────────────────────────
+  inference:
+    name: Run inference → save predictions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: features      # only runs after features are built
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Download saved model
+        # Model files are committed to the repo in models/
+        # If you use Git LFS or artifact storage, adjust this step
+        run: ls models/lgb_model.pkl && echo "Model found"
+
+      - name: Run inference
+        run: PYTHONPATH=$(pwd) python -m src.models.inference
+
+      - name: Run Prophet forecast
+        run: PYTHONPATH=$(pwd) python -m src.models.prophet_forecast
+
+  # ── Job 4: Weekly retraining (Sundays only) ─────────────────
+  retrain:
+    name: Weekly model retraining
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: features
+    # Only runs on Sundays — controlled by day-of-week check
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.schedule, '0 6 * * 0')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Retrain models
+        run: PYTHONPATH=$(pwd) python -m src.models.train
+
+      - name: Commit updated models
         run: |
-          echo "All ingestion clients completed — $(date -u)"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add models/lgb_model.pkl models/xgb_model.pkl models/metrics.json
+          git diff --staged --quiet || git commit -m "chore: weekly model retrain $(date -u +%Y-%m-%d)"
+          git push

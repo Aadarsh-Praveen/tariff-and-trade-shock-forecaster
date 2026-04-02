@@ -125,3 +125,46 @@ sentiment_scoring:
   newsapi_weight: 0.60    # Real-time news signal
   sec_weight: 0.40        # Formal corporate disclosures
   sec_normalise_cap: 20   # Max filings/week before normalising to 100
+
+# ── Target variable ───────────────────────────────────────────
+# Controls how the binary disruption target is constructed.
+# Edit this section to add new disruption events or tune rule thresholds.
+# No code changes needed — only edit this file.
+
+target:
+  forecast_horizon_weeks: 3      # How far ahead to predict (shift window)
+  min_rules_to_trigger: 2        # How many rules must fire simultaneously
+
+  # Rule-based thresholds
+  # A week is flagged if min_rules_to_trigger rules fire at once
+  rules:
+    import_price_pct_4w_threshold:   2.0   # import price 4w % change > this
+    new_orders_pct_4w_threshold:    -1.0   # new orders 4w % change < this
+    industrials_pct_4w_threshold:   -2.0   # industrials ETF 4w % change < this
+    copper_abs_pct_4w_threshold:     5.0   # copper abs 4w % change > this
+
+  # Known historical disruption windows
+  # start/end: YYYY-MM-DD — the full disruption window
+  # event: human-readable label used in logs and SHAP narratives
+  disruption_anchors:
+    - start: "2020-02-21"
+      end:   "2020-06-05"
+      event: "COVID-19 supply shock"
+    - start: "2021-03-19"
+      end:   "2021-04-16"
+      event: "Suez Canal blockage"
+    - start: "2021-08-06"
+      end:   "2021-11-26"
+      event: "Semiconductor shortage"
+    - start: "2022-02-25"
+      end:   "2022-06-10"
+      event: "Ukraine invasion supply shock"
+    - start: "2022-09-02"
+      end:   "2022-12-09"
+      event: "Port congestion crisis"
+    - start: "2025-02-07"
+      end:   "2025-06-06"
+      event: "2025 tariff wave"
+    - start: "2025-01-17"
+      end:   "2026-03-06"        # covers entire test set — continuous tariff regime
+      event: "2025 tariff wave"

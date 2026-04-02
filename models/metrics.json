@@ -1,0 +1,39 @@
+[
+  {
+    "model": "CV XGBoost (mean)",
+    "f1": 0.1921,
+    "precision": 0,
+    "recall": 0,
+    "accuracy": 0
+  },
+  {
+    "model": "Baseline (Logistic Regression)",
+    "f1": 0.5412,
+    "precision": 0.92,
+    "recall": 0.3833,
+    "accuracy": 0.371
+  },
+  {
+    "model": "XGBoost",
+    "f1": 0.8624,
+    "precision": 0.9592,
+    "recall": 0.7833,
+    "accuracy": 0.7581,
+    "threshold": 0.1
+  },
+  {
+    "model": "LightGBM",
+    "f1": 0.9836,
+    "precision": 0.9677,
+    "recall": 1.0,
+    "accuracy": 0.9677,
+    "threshold": 0.1
+  },
+  {
+    "model": "Ensemble (XGB + LGB avg)",
+    "f1": 0.9836,
+    "precision": 0.9677,
+    "recall": 1.0,
+    "accuracy": 0.9677
+  }
+]

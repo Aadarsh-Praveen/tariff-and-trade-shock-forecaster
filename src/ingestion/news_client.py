@@ -14,7 +14,7 @@ Run:   python -m src.ingestion.news_client
 
 import requests
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from src.utils.config import config
 from src.utils.logger import get_logger
 from src.utils.db import upsert_rows
