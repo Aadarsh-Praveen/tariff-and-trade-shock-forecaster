@@ -94,3 +94,10 @@ Desktop.ini
 !data/.gitkeep
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+
+
+!models/lgb_model.pkl
+!models/xgb_model.pkl
+!models/feature_columns.json
+!models/metrics.json
+!models/shap_narrative.md
