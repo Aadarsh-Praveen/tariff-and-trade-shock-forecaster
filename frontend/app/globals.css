@@ -1,0 +1,332 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* Supply Chain Risk Dashboard - Black & Red Theme */
+/* DEFAULT: Dark Mode */
+:root {
+  /* Dark theme colors (DEFAULT) */
+  --background: 0 0% 0%;                    /* #000000 pure black */
+  --foreground: 0 0% 100%;                  /* #ffffff */
+  --card: 0 0% 5%;                          /* Very dark gray, no red tint */
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 5%;
+  --popover-foreground: 0 0% 100%;
+  
+  /* Primary: Vibrant red #df2531 */
+  --primary: 354 83% 51%;                    /* #df2531 */
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary: Neutral dark backgrounds */
+  --secondary: 0 0% 10%;                     /* Dark gray, no red */
+  --secondary-foreground: 0 0% 100%;
+  
+  /* Muted: Subtle white on black */
+  --muted: 0 0% 10%;                         /* Dark gray for muted areas */
+  --muted-foreground: 0 0% 65%;              /* Lighter gray text */
+  
+  /* Accent: Red - only for interactive elements */
+  --accent: 354 83% 51%;
+  --accent-foreground: 0 0% 100%;
+  
+  /* Destructive: Red for alerts */
+  --destructive: 354 83% 51%;
+  --destructive-foreground: 0 0% 100%;
+  
+  /* Borders: Subtle gray, red only on hover/active */
+  --border: 0 0% 15%;                        /* Dark gray borders */
+  --input: 0 0% 15%;
+  --ring: 354 83% 51%;                       /* Red ring for focus states */
+  
+  /* Risk severity colors - Red for high, amber/green for others */
+  --risk-critical: 354 83% 51%;              /* #df2531 red */
+  --risk-high: 354 83% 51%;                  /* #df2531 red */
+  --risk-medium: 38 92% 50%;                 /* #f59e0b amber */
+  --risk-low: 142 71% 45%;                   /* #22c55e green */
+  
+  /* Chart colors - Red dominant, amber/green secondary */
+  --chart-1: 354 83% 51%;                    /* Red */
+  --chart-2: 142 71% 45%;                    /* Green */
+  --chart-3: 38 92% 50%;                     /* Amber */
+  --chart-4: 0 0% 70%;                       /* White 70% */
+  --chart-5: 354 83% 40%;                    /* Darker red */
+  
+  --radius: 0.75rem;
+  
+  /* Sidebar styling - Pure black */
+  --sidebar: 0 0% 0%;                        /* Pure black */
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 354 83% 51%;            /* Red */
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 10%;                /* Dark gray, minimal red */
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 0 0% 15%;                /* Dark gray border */
+  --sidebar-ring: 354 83% 51%;
+}
+
+.light {
+  /* Light theme colors */
+  --background: 0 0% 100%;                   /* #ffffff white */
+  --foreground: 0 0% 0%;                     /* #000000 black */
+  --card: 0 0% 98%;                          /* Very light gray */
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+  
+  /* Primary: Vibrant red #df2531 */
+  --primary: 354 83% 51%;                    /* #df2531 */
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary: Light gray backgrounds */
+  --secondary: 0 0% 96%;                     /* Light gray */
+  --secondary-foreground: 0 0% 0%;
+  
+  /* Muted: Light gray */
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;              /* Medium gray text */
+  
+  /* Accent: Red - only for interactive elements */
+  --accent: 354 83% 51%;
+  --accent-foreground: 0 0% 100%;
+  
+  /* Destructive: Red for alerts */
+  --destructive: 354 83% 51%;
+  --destructive-foreground: 0 0% 100%;
+  
+  /* Borders: Light gray */
+  --border: 0 0% 90%;                        /* Light gray borders */
+  --input: 0 0% 90%;
+  --ring: 354 83% 51%;                       /* Red ring for focus states */
+  
+  /* Risk severity colors - Red for high, amber/green for others */
+  --risk-critical: 354 83% 51%;              /* #df2531 red */
+  --risk-high: 354 83% 51%;                  /* #df2531 red */
+  --risk-medium: 38 92% 50%;                 /* #f59e0b amber */
+  --risk-low: 142 71% 45%;                   /* #22c55e green */
+  
+  /* Chart colors - Red dominant, amber/green secondary */
+  --chart-1: 354 83% 51%;                    /* Red */
+  --chart-2: 142 71% 45%;                    /* Green */
+  --chart-3: 38 92% 50%;                     /* Amber */
+  --chart-4: 0 0% 30%;                       /* Dark gray for light mode */
+  --chart-5: 354 83% 40%;                    /* Darker red */
+  
+  --radius: 0.75rem;
+  
+  /* Sidebar styling - Light mode */
+  --sidebar: 0 0% 100%;                      /* White */
+  --sidebar-foreground: 0 0% 0%;
+  --sidebar-primary: 354 83% 51%;            /* Red */
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 96%;                /* Light gray */
+  --sidebar-accent-foreground: 0 0% 0%;
+  --sidebar-border: 0 0% 90%;                /* Light gray border */
+  --sidebar-ring: 354 83% 51%;
+}
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback';
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-risk-critical: var(--risk-critical);
+  --color-risk-high: var(--risk-high);
+  --color-risk-medium: var(--risk-medium);
+  --color-risk-low: var(--risk-low);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  
+  html {
+    background-color: #000000;
+    color: #ffffff;
+  }
+  html.light {
+    background-color: #ffffff;
+    color: #000000;
+  }
+  
+  body {
+    @apply text-foreground;
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+  body.light,
+  html.light body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  main {
+    background-color: inherit;
+    color: inherit;
+  }
+  
+  /* Ensure all interactive elements and icons are visible */
+  button {
+    color: inherit;
+  }
+  
+  button svg,
+  a svg {
+    color: currentColor;
+  }
+  
+  /* Make sure ghost buttons are visible */
+  button[class*="ghost"] {
+    color: #ffffff;
+  }
+  html.light button[class*="ghost"] {
+    color: #000000;
+  }
+  
+  a,
+  input,
+  select,
+  textarea {
+    color: inherit;
+  }
+}
+
+@layer utilities {
+  /* Neutral backgrounds - DEFAULT: Dark mode, .light for light mode */
+  .bg-neutral-dark {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+  .light .bg-neutral-dark {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+  
+  .bg-neutral-hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  .light .bg-neutral-hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Red transparency backgrounds - only for high-risk elements */
+  .bg-red-4 {
+    background-color: rgba(223, 37, 49, 0.04);
+  }
+  .bg-red-8 {
+    background-color: rgba(223, 37, 49, 0.08);
+  }
+  .bg-red-12 {
+    background-color: rgba(223, 37, 49, 0.12);
+  }
+  .bg-red-15 {
+    background-color: rgba(223, 37, 49, 0.15);
+  }
+  
+  /* Neutral borders - DEFAULT: Dark mode, .light for light mode */
+  .border-neutral {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .light .border-neutral {
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  .border-neutral-hover {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  .light .border-neutral-hover {
+    border-color: rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Red transparency borders - only for emphasis */
+  .border-red-20 {
+    border-color: rgba(223, 37, 49, 0.2);
+  }
+  .border-red-30 {
+    border-color: rgba(223, 37, 49, 0.3);
+  }
+  .border-red-40 {
+    border-color: rgba(223, 37, 49, 0.4);
+  }
+  .border-red-60 {
+    border-color: rgba(223, 37, 49, 0.6);
+  }
+  
+  /* Text opacity levels - DEFAULT: Dark mode (white text), .light for light mode (black text) */
+  .text-100 {
+    color: rgb(255, 255, 255);              /* White in dark mode (default) */
+  }
+  .light .text-100 {
+    color: rgb(0, 0, 0);                    /* Black in light mode */
+  }
+  
+  .text-70 {
+    color: rgba(255, 255, 255, 0.7);        /* 70% white in dark mode (default) */
+  }
+  .light .text-70 {
+    color: rgba(0, 0, 0, 0.8);              /* 80% black in light mode */
+  }
+  
+  .text-45 {
+    color: rgba(255, 255, 255, 0.45);       /* 45% white in dark mode (default) */
+  }
+  .light .text-45 {
+    color: rgba(0, 0, 0, 0.6);              /* 60% black in light mode */
+  }
+  
+  .text-25 {
+    color: rgba(255, 255, 255, 0.25);       /* 25% white in dark mode (default) */
+  }
+  .light .text-25 {
+    color: rgba(0, 0, 0, 0.4);              /* 40% black in light mode */
+  }
+  
+  /* Red glow effects - only for high-risk items */
+  .glow-red {
+    box-shadow: 0 0 24px rgba(223, 37, 49, 0.3);
+  }
+  .glow-red-strong {
+    box-shadow: 0 0 32px rgba(223, 37, 49, 0.5);
+  }
+  
+  /* Amber glow (medium risk) */
+  .glow-amber {
+    box-shadow: 0 0 24px rgba(245, 158, 11, 0.3);
+  }
+  
+  /* Green glow (low risk) */
+  .glow-green {
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.3);
+  }
+}
