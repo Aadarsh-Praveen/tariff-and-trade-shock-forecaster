@@ -1,11 +1,11 @@
 'use client'
 
-import { Bell, Search } from 'lucide-react'
 import { useDashboard } from './dashboard-context'
+import { SearchBar } from './search-bar'
+import { NotificationDropdown } from './notification-dropdown'
+import { DateBadge } from './date-badge'
 import { TIME_RANGES } from '@/lib/data/types'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ThemeToggle } from '@/components/theme-toggle'
 import {
   Select,
@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 
 interface DashboardHeaderProps {
   title: string
@@ -22,33 +21,34 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ title, description }: DashboardHeaderProps) {
-  const { timeRange, setTimeRange, searchQuery, setSearchQuery, unreadAlertCount } = useDashboard()
+  const { timeRange, setTimeRange } = useDashboard()
   
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b border-sidebar-border bg-background px-4 backdrop-blur">
-      <SidebarTrigger className="-ml-1 text-foreground" />
-      <Separator orientation="vertical" className="h-6 bg-sidebar-border" />
+    <header className="top-bar-blur sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 px-6 border-b border-border">
+      <SidebarTrigger className="-ml-1 text-muted-foreground" />
+
+      <div className="w-px h-6 bg-border" />
       
       <div className="flex flex-1 items-center gap-4">
-        <div className="flex flex-col gap-0.5">
-          <h1 className="text-lg font-semibold leading-none tracking-tight text-100">{title}</h1>
+        {/* Title block */}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[14px] font-bold leading-none tracking-tight text-foreground">
+            {title}
+          </h1>
           {description && (
-            <p className="text-sm text-45">{description}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{description}</p>
           )}
         </div>
         
         <div className="ml-auto flex items-center gap-3">
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-45" />
-            <Input
-              type="search"
-              placeholder="Search suppliers, alerts..."
-              className="w-64 pl-9"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+
+          {/* Search */}
+          <SearchBar />
           
+          {/* Date badge */}
+          <DateBadge />
+          
+          {/* Time range */}
           <Select
             value={timeRange.value}
             onValueChange={(value) => {
@@ -56,29 +56,27 @@ export function DashboardHeader({ title, description }: DashboardHeaderProps) {
               if (range) setTimeRange(range)
             }}
           >
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32 h-9 text-[12px] text-muted-foreground bg-input border-border">
               <SelectValue placeholder="Time range" />
             </SelectTrigger>
-            <SelectContent className="bg-background border-sidebar-border">
+            <SelectContent className="bg-card border-border">
               {TIME_RANGES.map((range) => (
-                <SelectItem key={range.value} value={range.value} className="text-foreground focus:bg-neutral-hover">
+                <SelectItem 
+                  key={range.value} 
+                  value={range.value}
+                  className="text-[12px] text-muted-foreground"
+                >
                   {range.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           
+          {/* Theme toggle */}
           <ThemeToggle />
           
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="size-5" />
-            {unreadAlertCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[#df2531] text-[10px] font-medium text-white shadow-[0_0_8px_rgba(223,37,49,0.6)]">
-                {unreadAlertCount}
-              </span>
-            )}
-            <span className="sr-only">Notifications</span>
-          </Button>
+          {/* Notifications */}
+          <NotificationDropdown />
         </div>
       </div>
     </header>

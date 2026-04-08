@@ -1,131 +1,123 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-/* Supply Chain Risk Dashboard - Black & Red Theme */
-/* DEFAULT: Dark Mode */
+/* ═══════════════════════════════════════════════════
+   Supply Chain Risk Dashboard — Dark & Light Themes
+   ROOT CAUSE FIX: All variables now include hsl()
+   so Tailwind v4 @theme inline resolves valid colors.
+   ═══════════════════════════════════════════════════ */
+
+/* DEFAULT: Dark Mode — purple-red tinted near-black */
 :root {
-  /* Dark theme colors (DEFAULT) */
-  --background: 0 0% 0%;                    /* #000000 pure black */
-  --foreground: 0 0% 100%;                  /* #ffffff */
-  --card: 0 0% 5%;                          /* Very dark gray, no red tint */
-  --card-foreground: 0 0% 100%;
-  --popover: 0 0% 5%;
-  --popover-foreground: 0 0% 100%;
-  
-  /* Primary: Vibrant red #df2531 */
-  --primary: 354 83% 51%;                    /* #df2531 */
-  --primary-foreground: 0 0% 100%;
-  
-  /* Secondary: Neutral dark backgrounds */
-  --secondary: 0 0% 10%;                     /* Dark gray, no red */
-  --secondary-foreground: 0 0% 100%;
-  
-  /* Muted: Subtle white on black */
-  --muted: 0 0% 10%;                         /* Dark gray for muted areas */
-  --muted-foreground: 0 0% 65%;              /* Lighter gray text */
-  
-  /* Accent: Red - only for interactive elements */
-  --accent: 354 83% 51%;
-  --accent-foreground: 0 0% 100%;
-  
-  /* Destructive: Red for alerts */
-  --destructive: 354 83% 51%;
-  --destructive-foreground: 0 0% 100%;
-  
-  /* Borders: Subtle gray, red only on hover/active */
-  --border: 0 0% 15%;                        /* Dark gray borders */
-  --input: 0 0% 15%;
-  --ring: 354 83% 51%;                       /* Red ring for focus states */
-  
-  /* Risk severity colors - Red for high, amber/green for others */
-  --risk-critical: 354 83% 51%;              /* #df2531 red */
-  --risk-high: 354 83% 51%;                  /* #df2531 red */
-  --risk-medium: 38 92% 50%;                 /* #f59e0b amber */
-  --risk-low: 142 71% 45%;                   /* #22c55e green */
-  
-  /* Chart colors - Red dominant, amber/green secondary */
-  --chart-1: 354 83% 51%;                    /* Red */
-  --chart-2: 142 71% 45%;                    /* Green */
-  --chart-3: 38 92% 50%;                     /* Amber */
-  --chart-4: 0 0% 70%;                       /* White 70% */
-  --chart-5: 354 83% 40%;                    /* Darker red */
-  
-  --radius: 0.75rem;
-  
-  /* Sidebar styling - Pure black */
-  --sidebar: 0 0% 0%;                        /* Pure black */
-  --sidebar-foreground: 0 0% 100%;
-  --sidebar-primary: 354 83% 51%;            /* Red */
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 0 0% 10%;                /* Dark gray, minimal red */
-  --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-border: 0 0% 15%;                /* Dark gray border */
-  --sidebar-ring: 354 83% 51%;
+  --background: hsl(270 35% 4%);
+  --foreground: hsl(270 27% 93%);
+  --card: hsl(270 25% 8%);
+  --card-foreground: hsl(270 27% 93%);
+  --popover: hsl(270 25% 8%);
+  --popover-foreground: hsl(270 27% 93%);
+
+  --primary: hsl(8 77% 61%);
+  --primary-foreground: hsl(270 27% 93%);
+
+  --secondary: hsl(270 20% 12%);
+  --secondary-foreground: hsl(270 27% 93%);
+
+  --muted: hsl(270 25% 8%);
+  --muted-foreground: hsl(270 27% 75%);
+
+  --accent: hsl(8 77% 61%);
+  --accent-foreground: hsl(270 27% 93%);
+
+  --destructive: hsl(8 77% 61%);
+  --destructive-foreground: hsl(270 27% 93%);
+
+  --border: hsl(0 0% 100% / 0.10);
+  --input: hsl(270 28% 7%);
+  --ring: hsl(8 77% 61%);
+
+  --risk-high: hsl(8 77% 61%);
+  --risk-medium: hsl(38 85% 52%);
+  --risk-low: hsl(142 57% 43%);
+  --risk-blue: hsl(209 42% 56%);
+  --risk-purple: hsl(260 42% 66%);
+  --risk-critical: hsl(0 72% 51%);
+
+  --chart-1: hsl(8 77% 61%);
+  --chart-2: hsl(38 85% 52%);
+  --chart-3: hsl(142 57% 43%);
+  --chart-4: hsl(209 42% 56%);
+  --chart-5: hsl(260 42% 66%);
+
+  --radius: 0.8125rem;
+
+  --sidebar: hsl(270 35% 4%);
+  --sidebar-foreground: hsl(270 27% 93%);
+  --sidebar-primary: hsl(8 77% 61%);
+  --sidebar-primary-foreground: hsl(270 27% 93%);
+  --sidebar-accent: hsl(270 20% 12%);
+  --sidebar-accent-foreground: hsl(270 27% 93%);
+  --sidebar-border: hsl(0 0% 100% / 0.10);
+  --sidebar-ring: hsl(8 77% 61%);
 }
 
+/* LIGHT MODE — cool blue-gray surfaces */
 .light {
-  /* Light theme colors */
-  --background: 0 0% 100%;                   /* #ffffff white */
-  --foreground: 0 0% 0%;                     /* #000000 black */
-  --card: 0 0% 98%;                          /* Very light gray */
-  --card-foreground: 0 0% 0%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 0%;
-  
-  /* Primary: Vibrant red #df2531 */
-  --primary: 354 83% 51%;                    /* #df2531 */
-  --primary-foreground: 0 0% 100%;
-  
-  /* Secondary: Light gray backgrounds */
-  --secondary: 0 0% 96%;                     /* Light gray */
-  --secondary-foreground: 0 0% 0%;
-  
-  /* Muted: Light gray */
-  --muted: 0 0% 96%;
-  --muted-foreground: 0 0% 45%;              /* Medium gray text */
-  
-  /* Accent: Red - only for interactive elements */
-  --accent: 354 83% 51%;
-  --accent-foreground: 0 0% 100%;
-  
-  /* Destructive: Red for alerts */
-  --destructive: 354 83% 51%;
-  --destructive-foreground: 0 0% 100%;
-  
-  /* Borders: Light gray */
-  --border: 0 0% 90%;                        /* Light gray borders */
-  --input: 0 0% 90%;
-  --ring: 354 83% 51%;                       /* Red ring for focus states */
-  
-  /* Risk severity colors - Red for high, amber/green for others */
-  --risk-critical: 354 83% 51%;              /* #df2531 red */
-  --risk-high: 354 83% 51%;                  /* #df2531 red */
-  --risk-medium: 38 92% 50%;                 /* #f59e0b amber */
-  --risk-low: 142 71% 45%;                   /* #22c55e green */
-  
-  /* Chart colors - Red dominant, amber/green secondary */
-  --chart-1: 354 83% 51%;                    /* Red */
-  --chart-2: 142 71% 45%;                    /* Green */
-  --chart-3: 38 92% 50%;                     /* Amber */
-  --chart-4: 0 0% 30%;                       /* Dark gray for light mode */
-  --chart-5: 354 83% 40%;                    /* Darker red */
-  
-  --radius: 0.75rem;
-  
-  /* Sidebar styling - Light mode */
-  --sidebar: 0 0% 100%;                      /* White */
-  --sidebar-foreground: 0 0% 0%;
-  --sidebar-primary: 354 83% 51%;            /* Red */
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 0 0% 96%;                /* Light gray */
-  --sidebar-accent-foreground: 0 0% 0%;
-  --sidebar-border: 0 0% 90%;                /* Light gray border */
-  --sidebar-ring: 354 83% 51%;
+  --background: hsl(220 25% 96%);
+  --foreground: hsl(220 43% 4%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(220 43% 4%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(220 43% 4%);
+
+  --primary: hsl(6 61% 51%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(220 20% 93%);
+  --secondary-foreground: hsl(220 43% 4%);
+
+  --muted: hsl(220 20% 93%);
+  --muted-foreground: hsl(220 15% 40%);
+
+  --accent: hsl(6 61% 51%);
+  --accent-foreground: hsl(0 0% 100%);
+
+  --destructive: hsl(6 61% 51%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(220 20% 88%);
+  --input: hsl(220 20% 93%);
+  --ring: hsl(6 61% 51%);
+
+  --risk-high: hsl(6 61% 51%);
+  --risk-medium: hsl(38 82% 39%);
+  --risk-low: hsl(142 61% 31%);
+  --risk-blue: hsl(209 56% 40%);
+  --risk-purple: hsl(260 38% 49%);
+  --risk-critical: hsl(0 72% 45%);
+
+  --chart-1: hsl(6 61% 51%);
+  --chart-2: hsl(38 82% 39%);
+  --chart-3: hsl(142 61% 31%);
+  --chart-4: hsl(209 56% 40%);
+  --chart-5: hsl(260 38% 49%);
+
+  --radius: 0.8125rem;
+
+  --sidebar: hsl(220 29% 97%);
+  --sidebar-foreground: hsl(220 43% 4%);
+  --sidebar-primary: hsl(6 61% 51%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(220 20% 93%);
+  --sidebar-accent-foreground: hsl(220 43% 4%);
+  --sidebar-border: hsl(220 20% 88%);
+  --sidebar-ring: hsl(6 61% 51%);
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+
+  /* Now these resolve to valid CSS colors like hsl(270 27% 93%) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -150,10 +142,12 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --color-risk-critical: var(--risk-critical);
   --color-risk-high: var(--risk-high);
   --color-risk-medium: var(--risk-medium);
   --color-risk-low: var(--risk-low);
+  --color-risk-blue: var(--risk-blue);
+  --color-risk-purple: var(--risk-purple);
+  --color-risk-critical: var(--risk-critical);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -172,161 +166,126 @@
   * {
     @apply border-border outline-ring/50;
   }
-  
+
+  /* Dark theme gradient outer shell */
   html {
-    background-color: #000000;
-    color: #ffffff;
+    background: linear-gradient(145deg, #0f0a1f 0%, #0a0812 40%, #060609 100%);
+    min-height: 100vh;
   }
+
   html.light {
-    background-color: #ffffff;
-    color: #000000;
+    background: linear-gradient(145deg, #dce1e8 0%, #e4e8ed 40%, #ebeef2 100%);
+    min-height: 100vh;
   }
-  
+
   body {
     @apply text-foreground;
-    background-color: #000000 !important;
-    color: #ffffff !important;
+    background: transparent;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  body.light,
-  html.light body {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-  }
-  
+
   main {
     background-color: inherit;
     color: inherit;
   }
-  
-  /* Ensure all interactive elements and icons are visible */
-  button {
-    color: inherit;
-  }
-  
-  button svg,
-  a svg {
-    color: currentColor;
-  }
-  
-  /* Make sure ghost buttons are visible */
-  button[class*="ghost"] {
-    color: #ffffff;
-  }
-  html.light button[class*="ghost"] {
-    color: #000000;
-  }
-  
-  a,
-  input,
-  select,
-  textarea {
-    color: inherit;
-  }
+
+  button { color: inherit; transition: all 0.15s ease; }
+  button svg, a svg { color: currentColor; }
+  a, input, select, textarea { color: inherit; transition: all 0.15s ease; }
+  [role="progressbar"] { transition: width 0.4s ease; }
 }
 
 @layer utilities {
-  /* Neutral backgrounds - DEFAULT: Dark mode, .light for light mode */
-  .bg-neutral-dark {
-    background-color: rgba(255, 255, 255, 0.03);
+  .app-shell { padding: 8px; min-height: 100vh; }
+  .app-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    min-height: calc(100vh - 16px);
   }
-  .light .bg-neutral-dark {
-    background-color: rgba(0, 0, 0, 0.03);
+
+  /* Section labels */
+  .section-label {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--muted-foreground);
   }
-  
-  .bg-neutral-hover {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-  .light .bg-neutral-hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-  
-  /* Red transparency backgrounds - only for high-risk elements */
-  .bg-red-4 {
-    background-color: rgba(223, 37, 49, 0.04);
-  }
-  .bg-red-8 {
-    background-color: rgba(223, 37, 49, 0.08);
-  }
-  .bg-red-12 {
-    background-color: rgba(223, 37, 49, 0.12);
-  }
-  .bg-red-15 {
-    background-color: rgba(223, 37, 49, 0.15);
-  }
-  
-  /* Neutral borders - DEFAULT: Dark mode, .light for light mode */
-  .border-neutral {
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  .light .border-neutral {
-    border-color: rgba(0, 0, 0, 0.1);
-  }
-  
-  .border-neutral-hover {
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-  .light .border-neutral-hover {
-    border-color: rgba(0, 0, 0, 0.15);
-  }
-  
-  /* Red transparency borders - only for emphasis */
-  .border-red-20 {
-    border-color: rgba(223, 37, 49, 0.2);
-  }
-  .border-red-30 {
-    border-color: rgba(223, 37, 49, 0.3);
-  }
-  .border-red-40 {
-    border-color: rgba(223, 37, 49, 0.4);
-  }
-  .border-red-60 {
-    border-color: rgba(223, 37, 49, 0.6);
-  }
-  
-  /* Text opacity levels - DEFAULT: Dark mode (white text), .light for light mode (black text) */
-  .text-100 {
-    color: rgb(255, 255, 255);              /* White in dark mode (default) */
-  }
-  .light .text-100 {
-    color: rgb(0, 0, 0);                    /* Black in light mode */
-  }
-  
-  .text-70 {
-    color: rgba(255, 255, 255, 0.7);        /* 70% white in dark mode (default) */
-  }
-  .light .text-70 {
-    color: rgba(0, 0, 0, 0.8);              /* 80% black in light mode */
-  }
-  
-  .text-45 {
-    color: rgba(255, 255, 255, 0.45);       /* 45% white in dark mode (default) */
-  }
-  .light .text-45 {
-    color: rgba(0, 0, 0, 0.6);              /* 60% black in light mode */
-  }
-  
-  .text-25 {
-    color: rgba(255, 255, 255, 0.25);       /* 25% white in dark mode (default) */
-  }
-  .light .text-25 {
-    color: rgba(0, 0, 0, 0.4);              /* 40% black in light mode */
-  }
-  
-  /* Red glow effects - only for high-risk items */
-  .glow-red {
-    box-shadow: 0 0 24px rgba(223, 37, 49, 0.3);
-  }
-  .glow-red-strong {
-    box-shadow: 0 0 32px rgba(223, 37, 49, 0.5);
-  }
-  
-  /* Amber glow (medium risk) */
-  .glow-amber {
-    box-shadow: 0 0 24px rgba(245, 158, 11, 0.3);
-  }
-  
-  /* Green glow (low risk) */
-  .glow-green {
-    box-shadow: 0 0 24px rgba(34, 197, 94, 0.3);
-  }
+
+  /* Status badges */
+  .status-badge { padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 600; }
+  .status-badge-high { background-color: color-mix(in srgb, var(--risk-high) 18%, transparent); color: var(--risk-high); }
+  .status-badge-medium { background-color: color-mix(in srgb, var(--risk-medium) 18%, transparent); color: var(--risk-medium); }
+  .status-badge-low { background-color: color-mix(in srgb, var(--risk-low) 18%, transparent); color: var(--risk-low); }
+
+  /* Progress bars */
+  .progress-track { height: 4px; background-color: color-mix(in srgb, var(--muted-foreground) 10%, transparent); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; transition: width 0.4s ease; }
+
+  .data-source-badge { font-size: 8px; padding: 2px 7px; border-radius: 4px; background: var(--muted); color: var(--muted-foreground); }
+
+  /* Toggle chips */
+  .toggle-chip { padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; transition: all 0.15s ease; cursor: pointer; }
+  .toggle-chip-inactive { background: var(--secondary); border: 1px solid var(--border); color: var(--muted-foreground); }
+  .toggle-chip-active { background: color-mix(in srgb, var(--primary) 7%, transparent); border: 1.5px solid color-mix(in srgb, var(--primary) 27%, transparent); color: var(--primary); }
+
+  /* Stat card */
+  .stat-card { border-left-width: 3px; border-radius: 3px 13px 13px 3px; }
+  .border-l-coral { border-left-color: var(--risk-high); }
+  .border-l-amber { border-left-color: var(--risk-medium); }
+  .border-l-green { border-left-color: var(--risk-low); }
+  .border-l-blue { border-left-color: var(--risk-blue); }
+  .border-l-purple { border-left-color: var(--risk-purple); }
+
+  /* Top bar blur */
+  .top-bar-blur { background: color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+  /* Accent backgrounds — using color-mix for opacity */
+  .bg-coral-faint { background-color: color-mix(in srgb, var(--risk-high) 7%, transparent); }
+  .bg-coral-soft { background-color: color-mix(in srgb, var(--risk-high) 15%, transparent); }
+  .bg-amber-faint { background-color: color-mix(in srgb, var(--risk-medium) 7%, transparent); }
+  .bg-amber-soft { background-color: color-mix(in srgb, var(--risk-medium) 15%, transparent); }
+  .bg-green-faint { background-color: color-mix(in srgb, var(--risk-low) 7%, transparent); }
+  .bg-green-soft { background-color: color-mix(in srgb, var(--risk-low) 15%, transparent); }
+  .bg-blue-faint { background-color: color-mix(in srgb, var(--risk-blue) 7%, transparent); }
+  .bg-blue-soft { background-color: color-mix(in srgb, var(--risk-blue) 15%, transparent); }
+  .bg-purple-faint { background-color: color-mix(in srgb, var(--risk-purple) 7%, transparent); }
+  .bg-purple-soft { background-color: color-mix(in srgb, var(--risk-purple) 15%, transparent); }
+
+  /* Accent borders */
+  .border-coral { border-color: color-mix(in srgb, var(--risk-high) 15%, transparent); }
+  .border-amber { border-color: color-mix(in srgb, var(--risk-medium) 15%, transparent); }
+  .border-green { border-color: color-mix(in srgb, var(--risk-low) 15%, transparent); }
+  .border-blue { border-color: color-mix(in srgb, var(--risk-blue) 15%, transparent); }
+  .border-purple { border-color: color-mix(in srgb, var(--risk-purple) 15%, transparent); }
+
+  /* Accent text */
+  .text-coral { color: var(--risk-high); }
+  .text-amber { color: var(--risk-medium); }
+  .text-green { color: var(--risk-low); }
+  .text-blue { color: var(--risk-blue); }
+  .text-purple { color: var(--risk-purple); }
+
+  /* Text hierarchy — t1/t2/t3/t4 */
+  .text-100, .text-t1 { color: var(--foreground); }
+  .text-70, .text-t2 { color: color-mix(in srgb, var(--foreground) 65%, transparent); }
+  .text-45, .text-t3 { color: var(--muted-foreground); }
+  .text-25, .text-t4 { color: color-mix(in srgb, var(--muted-foreground) 50%, transparent); }
+
+  .light .text-70, .light .text-t2 { color: color-mix(in srgb, var(--foreground) 85%, transparent); }
+  .light .text-45, .light .text-t3 { color: var(--muted-foreground); }
+  .light .text-25, .light .text-t4 { color: color-mix(in srgb, var(--muted-foreground) 60%, transparent); }
+
+  /* Red opacity backgrounds */
+  .bg-red-4 { background-color: color-mix(in srgb, var(--risk-high) 4%, transparent); }
+  .bg-red-8 { background-color: color-mix(in srgb, var(--risk-high) 8%, transparent); }
+  .bg-red-12 { background-color: color-mix(in srgb, var(--risk-high) 12%, transparent); }
+  .bg-red-15 { background-color: color-mix(in srgb, var(--risk-high) 15%, transparent); }
+
+  .border-red-20 { border-color: color-mix(in srgb, var(--risk-high) 20%, transparent); }
+  .border-red-30 { border-color: color-mix(in srgb, var(--risk-high) 30%, transparent); }
+  .border-red-40 { border-color: color-mix(in srgb, var(--risk-high) 40%, transparent); }
+  .border-red-60 { border-color: color-mix(in srgb, var(--risk-high) 60%, transparent); }
 }

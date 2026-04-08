@@ -1,12 +1,15 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'RiskGuard - Supply Chain Risk Assessment',
@@ -45,11 +48,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased">
+      <body className={`${inter.variable} antialiased`}>
         <ThemeProvider defaultTheme="dark">
-          <DashboardLayout>
-            {children}
-          </DashboardLayout>
+          <div className="app-shell">
+            <div className="app-container">
+              <DashboardLayout>
+                {children}
+              </DashboardLayout>
+            </div>
+          </div>
           <Analytics />
         </ThemeProvider>
       </body>

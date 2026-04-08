@@ -1,13 +1,10 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Filter, Bell, CheckCircle, Clock, AlertTriangle, Mail } from 'lucide-react'
+import { Bell, CheckCircle, Clock, AlertTriangle, Mail } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { AlertFeed } from '@/components/alerts/alert-feed'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Select,
@@ -33,7 +30,6 @@ export default function AlertsPage() {
   const [categoryFilter, setCategoryFilter] = useState<RiskCategory | 'all'>('all')
   const [tab, setTab] = useState<'all' | 'unread' | 'acknowledged'>('all')
   
-  // Subscription state
   const [email, setEmail] = useState('')
   const [threshold, setThreshold] = useState('65')
   const [subscriptionOpen, setSubscriptionOpen] = useState(false)
@@ -50,17 +46,11 @@ export default function AlertsPage() {
   }, [localAlerts, severityFilter, categoryFilter, tab])
   
   const handleMarkAsRead = (alertId: string) => {
-    setLocalAlerts((prev) =>
-      prev.map((a) => (a.id === alertId ? { ...a, isRead: true } : a))
-    )
+    setLocalAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, isRead: true } : a)))
   }
-  
   const handleAcknowledge = (alertId: string) => {
-    setLocalAlerts((prev) =>
-      prev.map((a) => (a.id === alertId ? { ...a, isRead: true, isAcknowledged: true } : a))
-    )
+    setLocalAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, isRead: true, isAcknowledged: true } : a)))
   }
-  
   const handleMarkAllAsRead = () => {
     setLocalAlerts((prev) => prev.map((a) => ({ ...a, isRead: true })))
   }
@@ -70,245 +60,179 @@ export default function AlertsPage() {
       const response = await fetch('http://localhost:8000/alerts/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          threshold: parseInt(threshold),
-          commodities: 'all',
-          frequency: 'weekly',
-        }),
+        body: JSON.stringify({ email, threshold: parseInt(threshold), commodities: 'all', frequency: 'weekly' }),
       })
-      
       if (response.ok) {
         const data = await response.json()
         setSubscriptionStatus(`✓ Subscribed! ${data.message}`)
-        setTimeout(() => {
-          setSubscriptionOpen(false)
-          setSubscriptionStatus(null)
-          setEmail('')
-        }, 3000)
+        setTimeout(() => { setSubscriptionOpen(false); setSubscriptionStatus(null); setEmail(''); }, 3000)
       } else {
         setSubscriptionStatus('Failed to subscribe. Please try again.')
       }
-    } catch (err) {
-      setSubscriptionStatus('Error: Could not connect to API')
-    }
+    } catch { setSubscriptionStatus('Error: Could not connect to API') }
   }
   
-  // Stats
   const stats = useMemo(() => {
     const unread = localAlerts.filter((a) => !a.isRead).length
     const critical = localAlerts.filter((a) => a.severity === 'critical').length
     const acknowledged = localAlerts.filter((a) => a.isAcknowledged).length
-    const avgResponseTime = 4.2 // hours (mock)
-    return { total: localAlerts.length, unread, critical, acknowledged, avgResponseTime }
+    return { total: localAlerts.length, unread, critical, acknowledged }
   }, [localAlerts])
   
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <DashboardHeader
-        title="Alerts & Notifications"
-        description="Monitor and respond to risk alerts"
-      />
+      <DashboardHeader title="Alerts & Notifications" description="Monitor and respond to risk alerts" />
       
-      <main className="flex-1 space-y-6 p-6 bg-background">
+      <main className="flex-1 space-y-6 p-6">
+
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-red-20 bg-red-4">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-red-12 p-2">
-                  <Bell className="size-5 text-[#df2531]" />
+          {[
+            { icon: Bell, label: 'Total Alerts', value: stats.total, color: 'coral' },
+            { icon: AlertTriangle, label: 'Critical', value: stats.critical, color: 'coral' },
+            { icon: Clock, label: 'Unread', value: stats.unread, color: 'text' },
+            { icon: CheckCircle, label: 'Acknowledged', value: stats.acknowledged, color: 'green' },
+          ].map((s) => (
+            <Card key={s.label} className="border-border bg-card">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`rounded-lg p-2 ${s.color === 'coral' ? 'bg-coral-soft' : s.color === 'green' ? 'bg-green-soft' : 'bg-secondary'}`}>
+                    <s.icon className={`size-5 ${s.color === 'coral' ? 'text-coral' : s.color === 'green' ? 'text-green' : 'text-muted-foreground'}`} />
+                  </div>
+                  <div>
+                    <p className="text-[13px] text-muted-foreground">{s.label}</p>
+                    <p className={`text-2xl font-bold tabular-nums ${s.color === 'coral' ? 'text-coral' : s.color === 'green' ? 'text-green' : 'text-foreground'}`}>{s.value}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-45">Total Alerts</p>
-                  <p className="text-2xl font-bold tabular-nums text-100">{stats.total}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-red-20 bg-red-4">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-red-12 p-2">
-                  <AlertTriangle className="size-5 text-[#df2531]" />
-                </div>
-                <div>
-                  <p className="text-sm text-45">Critical</p>
-                  <p className="text-2xl font-bold tabular-nums text-[#df2531]">{stats.critical}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-red-20 bg-red-4">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-red-8 p-2">
-                  <Clock className="size-5 text-70" />
-                </div>
-                <div>
-                  <p className="text-sm text-45">Unread</p>
-                  <p className="text-2xl font-bold tabular-nums text-100">{stats.unread}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-red-20 bg-red-4">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-[rgba(34,197,94,0.12)] p-2">
-                  <CheckCircle className="size-5 text-[#22c55e]" />
-                </div>
-                <div>
-                  <p className="text-sm text-45">Acknowledged</p>
-                  <p className="text-2xl font-bold tabular-nums text-[#22c55e]">{stats.acknowledged}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        
+
         {/* Email Subscription */}
-        <Card className="border-red-20 bg-red-4">
+        <Card className="border-border bg-card">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="size-5" />
-                  Email Alert Subscription
+                <CardTitle className="flex items-center gap-2 text-foreground">
+                  <Mail className="size-5" />Email Alert Subscription
                 </CardTitle>
-                <CardDescription className="text-45">
-                  Get notified when risk score exceeds your threshold
-                </CardDescription>
+                <CardDescription>Get notified when risk score exceeds your threshold</CardDescription>
               </div>
               <Dialog open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="default" className="bg-red-15 hover:bg-red-12 border-red-40">
+                  <button className="rounded-md px-4 py-2 text-sm font-medium bg-coral-soft border border-coral text-coral hover:bg-coral-faint transition-colors">
                     Subscribe
-                  </Button>
+                  </button>
                 </DialogTrigger>
-                <DialogContent className="bg-background border-red-30">
+                <DialogContent className="bg-card border-border">
                   <DialogHeader>
-                    <DialogTitle className="text-100">Subscribe to Risk Alerts</DialogTitle>
-                    <DialogDescription className="text-45">
-                      Enter your email and set a risk threshold to receive alerts
-                    </DialogDescription>
+                    <DialogTitle className="text-foreground">Subscribe to Risk Alerts</DialogTitle>
+                    <DialogDescription>Enter your email and set a risk threshold to receive alerts</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-100">Email Address</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="your.email@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="bg-background border-red-20 text-100"
+                      <label className="text-[13px] font-medium text-foreground">Email Address</label>
+                      <input
+                        type="email" placeholder="your.email@example.com" value={email} onChange={(e) => setEmail(e.target.value)}
+                        className="w-full h-9 px-3 rounded-md text-[13px] text-foreground bg-input border border-border focus:border-primary outline-none"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="threshold" className="text-100">Alert Threshold (0-100)</Label>
-                      <Input
-                        id="threshold"
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={threshold}
-                        onChange={(e) => setThreshold(e.target.value)}
-                        className="bg-background border-red-20 text-100"
+                      <label className="text-[13px] font-medium text-foreground">Alert Threshold (0-100)</label>
+                      <input
+                        type="number" min="1" max="100" value={threshold} onChange={(e) => setThreshold(e.target.value)}
+                        className="w-full h-9 px-3 rounded-md text-[13px] text-foreground bg-input border border-border focus:border-primary outline-none"
                       />
-                      <p className="text-xs text-45">
-                        You'll be alerted when risk score exceeds this value
-                      </p>
+                      <p className="text-[11px] text-t3">You'll be alerted when risk score exceeds this value</p>
                     </div>
                     {subscriptionStatus && (
-                      <div className={`text-sm p-3 rounded-lg ${
-                        subscriptionStatus.startsWith('✓')
-                          ? 'bg-[rgba(34,197,94,0.12)] text-[#22c55e] border border-[rgba(34,197,94,0.3)]'
-                          : 'bg-red-12 text-[#df2531] border border-red-30'
-                      }`}>
+                      <div className={`text-sm p-3 rounded-lg ${subscriptionStatus.startsWith('✓') ? 'bg-green-soft text-green border border-green' : 'bg-coral-soft text-coral border border-coral'}`}>
                         {subscriptionStatus}
                       </div>
                     )}
-                    <Button
-                      onClick={handleSubscribe}
-                      disabled={!email || !threshold}
-                      className="w-full bg-red-15 hover:bg-red-12 border border-red-40"
+                    <button
+                      onClick={handleSubscribe} disabled={!email || !threshold}
+                      className="w-full rounded-md px-4 py-2.5 text-sm font-medium bg-coral-soft border border-coral text-coral hover:bg-coral-faint transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Subscribe to Alerts
-                    </Button>
+                    </button>
                   </div>
                 </DialogContent>
               </Dialog>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-70">
+            <p className="text-[13px] text-t2 leading-relaxed">
               Receive email notifications when the risk score exceeds your defined threshold.
               Weekly frequency by default. You can unsubscribe at any time.
             </p>
           </CardContent>
         </Card>
-        
-        {/* Alerts List */}
-        <Card className="border-red-20 bg-red-4">
+
+        {/* Alert Feed */}
+        <Card className="border-border bg-card">
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle>Alert Feed</CardTitle>
-                <CardDescription className="text-45">
-                  {filteredAlerts.length} alerts
-                </CardDescription>
+                <CardTitle className="text-foreground">Alert Feed</CardTitle>
+                <CardDescription>{filteredAlerts.length} alerts</CardDescription>
               </div>
-              
-              <div className="flex items-center gap-2">
-                {stats.unread > 0 && (
-                  <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} className="border-red-20 hover:bg-red-8 text-70 hover:text-100">
-                    Mark all as read
-                  </Button>
-                )}
-              </div>
+              {stats.unread > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground border border-border hover:bg-secondary hover:text-foreground transition-colors"
+                >
+                  Mark all as read
+                </button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
             <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <TabsList className="bg-red-8 border border-red-20">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="unread">
+
+                <TabsList className="bg-secondary border border-border">
+                  <TabsTrigger value="all" className="text-t2 data-[state=active]:bg-coral data-[state=active]:text-white">
+                    All
+                  </TabsTrigger>
+                  <TabsTrigger value="unread" className="text-t2 data-[state=active]:bg-coral data-[state=active]:text-white">
                     Unread
                     {stats.unread > 0 && (
-                      <span className="ml-1.5 flex size-5 items-center justify-center rounded-full bg-[#df2531] text-[10px] text-white">
+                      <span className="ml-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-coral text-[10px] text-white font-semibold">
                         {stats.unread}
                       </span>
                     )}
                   </TabsTrigger>
-                  <TabsTrigger value="acknowledged">Acknowledged</TabsTrigger>
+                  <TabsTrigger value="acknowledged" className="text-t2 data-[state=active]:bg-coral data-[state=active]:text-white">
+                    Acknowledged
+                  </TabsTrigger>
                 </TabsList>
-                
+
                 <div className="flex items-center gap-2">
                   <Select value={severityFilter} onValueChange={(v) => setSeverityFilter(v as RiskSeverity | 'all')}>
-                    <SelectTrigger className="w-32 bg-background border-red-20 text-100">
+                    <SelectTrigger className="w-32 bg-card border-border text-t1">
                       <SelectValue placeholder="Severity" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border-red-30">
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
+                    <SelectContent className="bg-card border-border">
+                      {['all', 'critical', 'high', 'medium', 'low'].map((v) => (
+                        <SelectItem key={v} value={v} className="text-t1">
+                          {v.charAt(0).toUpperCase() + v.slice(1)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                  
+
                   <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as RiskCategory | 'all')}>
-                    <SelectTrigger className="w-36 bg-background border-red-20 text-100">
+                    <SelectTrigger className="w-36 bg-card border-border text-t1">
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border-red-30">
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="financial">Financial</SelectItem>
-                      <SelectItem value="operational">Operational</SelectItem>
-                      <SelectItem value="geopolitical">Geopolitical</SelectItem>
-                      <SelectItem value="compliance">Compliance</SelectItem>
+                    <SelectContent className="bg-card border-border">
+                      {['all', 'financial', 'operational', 'geopolitical', 'compliance'].map((v) => (
+                        <SelectItem key={v} value={v} className="text-t1">
+                          {v.charAt(0).toUpperCase() + v.slice(1)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -316,25 +240,13 @@ export default function AlertsPage() {
               
               <div className="mt-4">
                 <TabsContent value="all" className="m-0">
-                  <AlertFeed
-                    alerts={filteredAlerts}
-                    onMarkAsRead={handleMarkAsRead}
-                    onAcknowledge={handleAcknowledge}
-                  />
+                  <AlertFeed alerts={filteredAlerts} onMarkAsRead={handleMarkAsRead} onAcknowledge={handleAcknowledge} />
                 </TabsContent>
                 <TabsContent value="unread" className="m-0">
-                  <AlertFeed
-                    alerts={filteredAlerts}
-                    onMarkAsRead={handleMarkAsRead}
-                    onAcknowledge={handleAcknowledge}
-                  />
+                  <AlertFeed alerts={filteredAlerts} onMarkAsRead={handleMarkAsRead} onAcknowledge={handleAcknowledge} />
                 </TabsContent>
                 <TabsContent value="acknowledged" className="m-0">
-                  <AlertFeed
-                    alerts={filteredAlerts}
-                    onMarkAsRead={handleMarkAsRead}
-                    onAcknowledge={handleAcknowledge}
-                  />
+                  <AlertFeed alerts={filteredAlerts} onMarkAsRead={handleMarkAsRead} onAcknowledge={handleAcknowledge} />
                 </TabsContent>
               </div>
             </Tabs>

@@ -15,14 +15,12 @@ export function ThemeToggle() {
         console.log('Theme toggle clicked! Current theme:', theme)
         toggleTheme()
       }}
-      className="relative"
+      className="relative h-9 w-9 hover:bg-secondary transition-all duration-400"
       aria-label="Toggle theme"
       title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
     >
-      {/* Show Sun icon in dark mode (click to go to light) */}
-      {theme === 'dark' && <Sun className="size-5" />}
-      {/* Show Moon icon in light mode (click to go to dark) */}
-      {theme === 'light' && <Moon className="size-5" />}
+      {theme === 'dark' && <Sun className="size-5 text-t2" />}
+      {theme === 'light' && <Moon className="size-5 text-t2" />}
       <span className="sr-only">Toggle theme</span>
     </Button>
   )
