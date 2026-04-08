@@ -29,7 +29,7 @@ Docs (auto-generated):
 import json
 import pickle
 import os
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import Optional
 
 import numpy as np
@@ -44,6 +44,9 @@ from src.utils.ingestion_config import cfg
 from src.utils.logger           import get_logger
 
 logger = get_logger(__name__)
+
+# Python 3.10 compatibility - UTC was added in 3.11
+UTC = timezone.utc
 
 # ── App setup ─────────────────────────────────────────────────
 app = FastAPI(
@@ -852,7 +855,7 @@ import json
 import pickle
 import os
 from collections import defaultdict
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import Optional
 
 import numpy as np
@@ -867,6 +870,9 @@ from src.utils.ingestion_config import cfg
 from src.utils.logger           import get_logger
 
 logger = get_logger(__name__)
+
+# Python 3.10 compatibility - UTC was added in 3.11
+UTC = timezone.utc
 
 # ── App setup ─────────────────────────────────────────────────
 app = FastAPI(
