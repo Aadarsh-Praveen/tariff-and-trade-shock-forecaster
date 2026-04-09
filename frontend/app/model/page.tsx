@@ -1,33 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { BarChart3, Award, Target } from 'lucide-react'
+import { BarChart3, Award, Target, Lightbulb, Cpu } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { api, isBackendOffline } from '@/lib/api/client'
-import { c } from '@/lib/theme-colors'
 
-interface ModelMetric {
-  model: string
-  f1: number
-  precision: number
-  recall: number
-  accuracy: number
-}
+const CORAL = '#df2531'
+const AMBER = '#f59e0b'
+const GREEN = '#22c55e'
+const BLUE = '#6366f1'
+const PURPLE = '#8b5cf6'
 
-interface FeatureImportance {
-  feature: string
-  label: string
-  importance: number
-}
-
-interface ShapFeature {
-  feature: string
-  label: string
-  mean_abs_shap: number
-  rank: number
-}
+interface ModelMetric { model: string; f1: number; precision: number; recall: number; accuracy: number }
+interface FeatureImportance { feature: string; label: string; importance: number }
+interface ShapFeature { feature: string; label: string; mean_abs_shap: number; rank: number }
 
 export default function ModelPage() {
   const [metrics, setMetrics] = useState<ModelMetric[]>([])
@@ -40,9 +28,7 @@ export default function ModelPage() {
       try {
         setLoading(true)
         const [metricsData, featuresData, shapData] = await Promise.all([
-          api.getModelMetrics(),
-          api.getFeatureImportance(),
-          api.getShapSummary(20),
+          api.getModelMetrics(), api.getFeatureImportance(), api.getShapSummary(20),
         ])
         setMetrics(metricsData)
         setFeatureImportance(featuresData.features)
@@ -100,9 +86,7 @@ export default function ModelPage() {
           { feature: 'unemployment_rate_pct_4w', label: 'Unemployment % change (4w)', mean_abs_shap: 0.001300, rank: 19 },
           { feature: 'trade_pressure_index', label: 'Trade pressure index', mean_abs_shap: 0.001100, rank: 20 },
         ])
-      } finally {
-        setLoading(false)
-      }
+      } finally { setLoading(false) }
     }
     fetchData()
   }, [])
@@ -122,19 +106,24 @@ export default function ModelPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <DashboardHeader
-        title="Model Performance"
-        description="Training metrics, feature importance, and SHAP analysis"
-      />
+      <DashboardHeader title="Model Performance" description="Training metrics, feature importance, and SHAP analysis" />
       
       <main className="flex-1 space-y-6 p-6">
 
         {/* ═══ METRIC CARDS ═══ */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Card className="border-border bg-card">
+          {/* Selected Model */}
+          <Card className="border-border bg-card overflow-hidden">
+            <div style={{ height: 3, background: `linear-gradient(90deg, ${AMBER}, ${AMBER}00)` }} />
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Award className="size-4 text-amber" />
+              <CardTitle className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-medium text-muted-foreground">
+                <div style={{
+                  width: 24, height: 24, borderRadius: 6,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: `${AMBER}12`, border: `1px solid ${AMBER}20`,
+                }}>
+                  <Award className="size-3" style={{ color: AMBER }} />
+                </div>
                 Selected Model
               </CardTitle>
             </CardHeader>
@@ -147,23 +136,22 @@ export default function ModelPage() {
           {lgbMetrics && (
             <>
               {[
-                { label: 'F1 Score', value: lgbMetrics.f1 },
-                { label: 'Precision', value: lgbMetrics.precision },
-                { label: 'Recall', value: lgbMetrics.recall, sub: 'Zero false negatives' },
+                { label: 'F1 Score', value: lgbMetrics.f1, color: GREEN },
+                { label: 'Precision', value: lgbMetrics.precision, color: BLUE },
+                { label: 'Recall', value: lgbMetrics.recall, sub: 'Zero false negatives', color: PURPLE },
               ].map((m) => (
-                <Card key={m.label} className="border-border bg-card">
+                <Card key={m.label} className="border-border bg-card overflow-hidden">
+                  <div style={{ height: 3, background: `linear-gradient(90deg, ${m.color}, ${m.color}00)` }} />
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                    <CardTitle className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">
                       {m.label}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-green">
+                    <div className="text-2xl font-bold" style={{ color: m.color }}>
                       {(m.value * 100).toFixed(1)}%
                     </div>
-                    {m.sub && (
-                      <div className="text-xs text-muted-foreground mt-1">{m.sub}</div>
-                    )}
+                    {m.sub && <div className="text-xs text-muted-foreground mt-1">{m.sub}</div>}
                   </CardContent>
                 </Card>
               ))}
@@ -172,12 +160,22 @@ export default function ModelPage() {
         </div>
 
         {/* ═══ MODEL COMPARISON TABLE ═══ */}
-        <Card className="border-border bg-card">
+        <Card className="border-border bg-card overflow-hidden">
+          <div style={{ height: 3, background: `linear-gradient(90deg, ${BLUE}, ${BLUE}00)` }} />
           <CardHeader>
-            <CardTitle className="text-foreground">Model Comparison</CardTitle>
-            <CardDescription>
-              Performance metrics across different algorithms
-            </CardDescription>
+            <div className="flex items-center gap-3">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: `${BLUE}12`, border: `1px solid ${BLUE}20`,
+              }}>
+                <BarChart3 className="size-4" style={{ color: BLUE }} />
+              </div>
+              <div>
+                <CardTitle className="text-foreground text-base">Model Comparison</CardTitle>
+                <CardDescription className="text-xs mt-0.5">Performance metrics across different algorithms</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -185,12 +183,7 @@ export default function ModelPage() {
                 <thead>
                   <tr className="border-b border-border">
                     {['Model', 'F1', 'Precision', 'Recall', 'Accuracy'].map((h) => (
-                      <th
-                        key={h}
-                        className={`py-2.5 px-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground ${
-                          h === 'Model' ? 'text-left' : 'text-right'
-                        }`}
-                      >
+                      <th key={h} className={`py-2.5 px-3.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ${h === 'Model' ? 'text-left' : 'text-right'}`}>
                         {h}
                       </th>
                     ))}
@@ -200,32 +193,21 @@ export default function ModelPage() {
                   {metrics.map((m, i) => {
                     const isLgb = m.model === 'LightGBM'
                     return (
-                      <tr
-                        key={i}
-                        className={`${i < metrics.length - 1 ? 'border-b border-border/50' : ''} ${
-                          isLgb ? 'bg-secondary' : ''
-                        }`}
-                      >
+                      <tr key={i} className={`${i < metrics.length - 1 ? 'border-b border-border/50' : ''} ${isLgb ? 'bg-secondary' : ''}`}>
                         <td className={`py-2.5 px-3.5 text-foreground ${isLgb ? 'font-semibold' : 'font-medium'}`}>
                           {m.model}
                           {isLgb && (
-                            <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-green-soft text-green">
-                              SELECTED
-                            </span>
+                            <span style={{
+                              marginLeft: 8, fontSize: 9, fontWeight: 700,
+                              padding: '2px 7px', borderRadius: 5,
+                              backgroundColor: `${GREEN}15`, color: GREEN,
+                            }}>SELECTED</span>
                           )}
                         </td>
-                        <td className="text-right py-2.5 px-3.5 font-mono text-muted-foreground">
-                          {m.f1 > 0 ? m.f1.toFixed(4) : '—'}
-                        </td>
-                        <td className="text-right py-2.5 px-3.5 font-mono text-muted-foreground">
-                          {m.precision > 0 ? m.precision.toFixed(4) : '—'}
-                        </td>
-                        <td className="text-right py-2.5 px-3.5 font-mono text-muted-foreground">
-                          {m.recall > 0 ? m.recall.toFixed(4) : '—'}
-                        </td>
-                        <td className="text-right py-2.5 px-3.5 font-mono text-muted-foreground">
-                          {m.accuracy > 0 ? m.accuracy.toFixed(4) : '—'}
-                        </td>
+                        <td className="text-right py-2.5 px-3.5 font-mono text-muted-foreground">{m.f1 > 0 ? m.f1.toFixed(4) : '—'}</td>
+                        <td className="text-right py-2.5 px-3.5 font-mono text-muted-foreground">{m.precision > 0 ? m.precision.toFixed(4) : '—'}</td>
+                        <td className="text-right py-2.5 px-3.5 font-mono text-muted-foreground">{m.recall > 0 ? m.recall.toFixed(4) : '—'}</td>
+                        <td className="text-right py-2.5 px-3.5 font-mono text-muted-foreground">{m.accuracy > 0 ? m.accuracy.toFixed(4) : '—'}</td>
                       </tr>
                     )
                   })}
@@ -235,56 +217,50 @@ export default function ModelPage() {
           </CardContent>
         </Card>
 
-        {/* ═══ FEATURE IMPORTANCE CHART — Recharts needs c tokens ═══ */}
-        <Card className="border-border bg-card">
+        {/* ═══ FEATURE IMPORTANCE CHART ═══ */}
+        <Card className="border-border bg-card overflow-hidden">
+          <div style={{ height: 3, background: `linear-gradient(90deg, ${CORAL}, ${CORAL}00)` }} />
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Target className="size-5" />
-              Top 20 Feature Importances
-            </CardTitle>
-            <CardDescription>
-              LightGBM built-in feature importance (gain-based)
-            </CardDescription>
+            <div className="flex items-center gap-3">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: `${CORAL}12`, border: `1px solid ${CORAL}20`,
+              }}>
+                <Target className="size-4" style={{ color: CORAL }} />
+              </div>
+              <div>
+                <CardTitle className="text-foreground text-base">Top 20 Feature Importances</CardTitle>
+                <CardDescription className="text-xs mt-0.5">LightGBM built-in feature importance (gain-based)</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={500}>
-              <BarChart
-                data={featureImportance.slice(0, 20)}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 200, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke={c.grid} />
-                <XAxis
-                  type="number"
-                  stroke={c.axis}
-                  tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.5 }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="label"
-                  stroke={c.axis}
-                  tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.65 }}
-                  width={190}
-                />
+              <BarChart data={featureImportance.slice(0, 20)} layout="vertical" margin={{ top: 5, right: 30, left: 200, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" />
+                <XAxis type="number" stroke="rgba(128,128,128,0.2)" tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.65 }} />
+                <YAxis type="category" dataKey="label" stroke="rgba(128,128,128,0.2)" tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.65 }} width={190} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: c.cardBg,
-                    border: `1px solid ${c.border}`,
-                    borderRadius: 10,
-                    color: c.t1,
-                    fontSize: 12,
+                  cursor={{ fill: 'rgba(128,128,128,0.06)' }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.[0]) return null
+                    const d = payload[0].payload as FeatureImportance
+                    return (
+                      <div style={{ backgroundColor: '#1c1c1e', border: 'none', borderRadius: 14, padding: '14px 18px', boxShadow: '0 8px 32px rgba(0,0,0,0.45)', minWidth: 200 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}>{d.label}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Importance</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'monospace', color: CORAL }}>{d.importance.toFixed(6)}</span>
+                        </div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4, fontFamily: 'monospace' }}>{d.feature}</div>
+                      </div>
+                    )
                   }}
-                  itemStyle={{ color: c.t1 }}
-                  labelStyle={{ color: c.t3 }}
-                  formatter={(value: any) => [Number(value).toFixed(6), 'Importance']}
                 />
                 <Bar dataKey="importance" radius={[0, 4, 4, 0]}>
                   {featureImportance.slice(0, 20).map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill="#df2531"
-                      fillOpacity={1 - index * 0.035}
-                    />
+                    <Cell key={`cell-${index}`} fill={CORAL} fillOpacity={1 - index * 0.035} />
                   ))}
                 </Bar>
               </BarChart>
@@ -292,59 +268,54 @@ export default function ModelPage() {
           </CardContent>
         </Card>
 
-        {/* ═══ SHAP GLOBAL IMPORTANCE — Recharts needs c tokens ═══ */}
-        <Card className="border-border bg-card">
+        {/* ═══ SHAP GLOBAL IMPORTANCE ═══ */}
+        <Card className="border-border bg-card overflow-hidden">
+          <div style={{ height: 3, background: `linear-gradient(90deg, ${AMBER}, ${AMBER}00)` }} />
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <BarChart3 className="size-5" />
-              Top 20 SHAP Global Importance
-            </CardTitle>
-            <CardDescription>
-              Mean absolute SHAP values across all predictions
-            </CardDescription>
+            <div className="flex items-center gap-3">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: `${AMBER}12`, border: `1px solid ${AMBER}20`,
+              }}>
+                <BarChart3 className="size-4" style={{ color: AMBER }} />
+              </div>
+              <div>
+                <CardTitle className="text-foreground text-base">Top 20 SHAP Global Importance</CardTitle>
+                <CardDescription className="text-xs mt-0.5">Mean absolute SHAP values across all predictions</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={500}>
-              <BarChart
-                data={shapSummary}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 200, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke={c.grid} />
-                <XAxis
-                  type="number"
-                  stroke={c.axis}
-                  tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.5 }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="label"
-                  stroke={c.axis}
-                  tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.65 }}
-                  width={190}
-                />
+              <BarChart data={shapSummary} layout="vertical" margin={{ top: 5, right: 30, left: 200, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" />
+                <XAxis type="number" stroke="rgba(128,128,128,0.2)" tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.65 }} />
+                <YAxis type="category" dataKey="label" stroke="rgba(128,128,128,0.2)" tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.65 }} width={190} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: c.cardBg,
-                    border: `1px solid ${c.border}`,
-                    borderRadius: 10,
-                    color: c.t1,
-                    fontSize: 12,
+                  cursor={{ fill: 'rgba(128,128,128,0.06)' }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.[0]) return null
+                    const d = payload[0].payload as ShapFeature
+                    return (
+                      <div style={{ backgroundColor: '#1c1c1e', border: 'none', borderRadius: 14, padding: '14px 18px', boxShadow: '0 8px 32px rgba(0,0,0,0.45)', minWidth: 200 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}>{d.label}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Mean |SHAP|</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'monospace', color: AMBER }}>{d.mean_abs_shap.toFixed(6)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 4 }}>
+                          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Rank</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: AMBER, padding: '1px 6px', borderRadius: 4, backgroundColor: `${AMBER}18` }}>#{d.rank}</span>
+                        </div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4, fontFamily: 'monospace' }}>{d.feature}</div>
+                      </div>
+                    )
                   }}
-                  itemStyle={{ color: c.t1 }}
-                  labelStyle={{ color: c.t3 }}
-                  formatter={(value: any, _: string, props: any) => [
-                    `Mean |SHAP|: ${Number(value).toFixed(6)}  •  Rank: #${props.payload.rank}`,
-                    'Impact'
-                  ]}
                 />
                 <Bar dataKey="mean_abs_shap" radius={[0, 4, 4, 0]}>
                   {shapSummary.map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill="#f59e0b"
-                      fillOpacity={1 - index * 0.035}
-                    />
+                    <Cell key={`cell-${index}`} fill={AMBER} fillOpacity={1 - index * 0.035} />
                   ))}
                 </Bar>
               </BarChart>
@@ -353,9 +324,19 @@ export default function ModelPage() {
         </Card>
 
         {/* ═══ MODEL INFO ═══ */}
-        <Card className="border-border bg-card">
+        <Card className="border-border bg-card overflow-hidden">
+          <div style={{ height: 3, background: `linear-gradient(90deg, ${BLUE}, ${BLUE}00)` }} />
           <CardHeader>
-            <CardTitle className="text-foreground">Model Architecture & Training</CardTitle>
+            <div className="flex items-center gap-3">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: `${BLUE}12`, border: `1px solid ${BLUE}20`,
+              }}>
+                <Cpu className="size-4" style={{ color: BLUE }} />
+              </div>
+              <CardTitle className="text-foreground text-base">Model Architecture & Training</CardTitle>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <div className="grid md:grid-cols-2 gap-6">
@@ -410,8 +391,8 @@ export default function ModelPage() {
               <h4 className="font-semibold mb-2 text-foreground">Why LightGBM?</h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 LightGBM outperformed XGBoost, Logistic Regression, and ensemble methods on our test set.
-                With <strong className="text-foreground">100% recall</strong>, it never misses a disruption event—critical
-                for supply chain risk management where false negatives are costly. The 96.8% precision ensures
+                With <span style={{ color: GREEN, fontWeight: 700 }}>100% recall</span>, it never misses a disruption event—critical
+                for supply chain risk management where false negatives are costly. The <span style={{ color: GREEN, fontWeight: 700 }}>96.8% precision</span> ensures
                 we also minimize false alarms.
               </p>
             </div>

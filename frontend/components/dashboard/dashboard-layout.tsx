@@ -13,10 +13,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <DashboardProvider>
       <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          {children}
-        </SidebarInset>
+        <div className="flex h-screen overflow-hidden w-full">
+          <AppSidebar />
+          <SidebarInset
+            className="flex-1 overflow-y-auto !mr-0 !pr-0 !max-w-none w-full"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(128,128,128,0.25) transparent' }}
+          >
+            {children}
+          </SidebarInset>
+        </div>
       </SidebarProvider>
     </DashboardProvider>
   )

@@ -1,23 +1,28 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Target, Check } from 'lucide-react'
+import { Target, Check, Lightbulb, TrendingUp, BarChart3 } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { RiskScoreGauge } from '@/components/risk/risk-score-gauge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { api, isBackendOffline } from '@/lib/api/client'
-import { c, getRiskColor } from '@/lib/theme-colors'
+import { getRiskColor } from '@/lib/theme-colors'
+
+const CORAL = '#df2531'
+const AMBER = '#f59e0b'
+const GREEN = '#22c55e'
+const BLUE = '#6366f1'
+const PURPLE = '#8b5cf6'
 
 interface Commodity { key: string; label: string }
 
-// Rank badge colors — use theme-aware tokens
-const rankStyles = [
-  { bg: c.coralSoft, text: c.coral },
-  { bg: c.amberSoft, text: c.amber },
-  { bg: c.greenSoft, text: c.green },
-  { bg: c.secondary, text: c.t2 },
-  { bg: c.secondary, text: c.t2 },
-]
+function riskHex(level: string): string {
+  if (level === 'high') return CORAL
+  if (level === 'medium') return AMBER
+  return GREEN
+}
+
+const RANK_COLORS = [CORAL, AMBER, GREEN, BLUE, PURPLE]
 
 export default function CustomTrackerPage() {
   const [commodities, setCommodities] = useState<Commodity[]>([])
@@ -89,6 +94,8 @@ export default function CustomTrackerPage() {
     setSelected(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
   }
 
+  const maxShap = topSignals.length > 0 ? topSignals[0].mean_abs_shap : 1
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <DashboardHeader
@@ -99,15 +106,25 @@ export default function CustomTrackerPage() {
       <main className="flex-1 space-y-6 p-6">
 
         {/* ═══ COMMODITY SELECTION ═══ */}
-        <Card className="border-border bg-card">
+        <Card className="border-border bg-card overflow-hidden">
+          <div style={{
+            height: 3,
+            background: `linear-gradient(90deg, ${AMBER}, ${AMBER}40 50%, transparent)`,
+          }} />
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Target className="size-5" />
-              Select Commodities to Track
-            </CardTitle>
-            <CardDescription>
-              Choose the commodities most relevant to your supply chain
-            </CardDescription>
+            <div className="flex items-center gap-3">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: `${AMBER}12`, border: `1px solid ${AMBER}20`,
+              }}>
+                <Target className="size-4" style={{ color: AMBER }} />
+              </div>
+              <div>
+                <CardTitle className="text-foreground text-base">Select Commodities to Track</CardTitle>
+                <CardDescription className="text-xs mt-0.5">Choose the commodities most relevant to your supply chain</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -117,16 +134,26 @@ export default function CustomTrackerPage() {
                   <button
                     key={commodity.key}
                     onClick={() => toggleCommodity(commodity.key)}
-                    className="flex items-center justify-start gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all"
+                    className="flex items-center justify-start gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all"
                     style={{
-                      backgroundColor: isActive ? c.coralSoft : 'transparent',
-                      border: `1px solid ${isActive ? c.coralBorder : c.border}`,
-                      color: isActive ? c.coral : c.t2,
+                      backgroundColor: isActive ? `${AMBER}12` : 'transparent',
+                      border: `1px solid ${isActive ? `${AMBER}35` : 'rgba(128,128,128,0.15)'}`,
                       cursor: 'pointer',
                     }}
                   >
-                    {isActive && <Check className="size-4" />}
-                    {commodity.label}
+                    {isActive && (
+                      <div style={{
+                        width: 18, height: 18, borderRadius: 5,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: AMBER, flexShrink: 0,
+                      }}>
+                        <Check className="size-3" style={{ color: '#fff' }} />
+                      </div>
+                    )}
+                    <span style={isActive ? { color: AMBER, fontWeight: 600 } : undefined}
+                      className={isActive ? '' : 'text-muted-foreground'}>
+                      {commodity.label}
+                    </span>
                   </button>
                 )
               })}
@@ -142,19 +169,46 @@ export default function CustomTrackerPage() {
         {/* ═══ RISK COMPARISON ═══ */}
         {customRisk !== null && overallRisk !== null && (
           <div className="grid gap-6 md:grid-cols-2">
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle className="text-foreground">Your Custom Risk Score</CardTitle>
-                <CardDescription>
-                  Based on {selected.length} selected commodit{selected.length === 1 ? 'y' : 'ies'}
-                </CardDescription>
+            {/* Custom Risk */}
+            <Card className="border-border bg-card overflow-hidden relative">
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
+                background: `radial-gradient(ellipse at 50% 0%, ${riskHex(customLevel)}10 0%, transparent 60%)`,
+                pointerEvents: 'none',
+              }} />
+              <div style={{
+                height: 3,
+                background: `linear-gradient(90deg, ${riskHex(customLevel)}, ${riskHex(customLevel)}40 50%, transparent)`,
+              }} />
+              <CardHeader className="relative">
+                <div className="flex items-center gap-3">
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: `${riskHex(customLevel)}12`, border: `1px solid ${riskHex(customLevel)}20`,
+                  }}>
+                    <TrendingUp className="size-4" style={{ color: riskHex(customLevel) }} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-foreground text-base">Your Custom Risk Score</CardTitle>
+                    <CardDescription className="text-xs mt-0.5">
+                      Based on {selected.length} selected commodit{selected.length === 1 ? 'y' : 'ies'}
+                    </CardDescription>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center pb-6 space-y-4">
+              <CardContent className="relative flex flex-col items-center justify-center pb-6 space-y-4">
                 <RiskScoreGauge score={customRisk} size="lg" />
                 <div className="text-center">
-                  <span className="text-sm text-t2">
+                  <span className="text-sm text-muted-foreground">
                     Risk Level:{' '}
-                    <span className="font-semibold" style={{ color: getRiskColor(customLevel) }}>
+                    <span style={{
+                      fontWeight: 700,
+                      color: riskHex(customLevel),
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                      backgroundColor: `${riskHex(customLevel)}15`,
+                    }}>
                       {customLevel.toUpperCase()}
                     </span>
                   </span>
@@ -162,27 +216,52 @@ export default function CustomTrackerPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle className="text-foreground">Overall Market Risk</CardTitle>
-                <CardDescription>All commodities and signals combined</CardDescription>
+            {/* Overall Risk */}
+            <Card className="border-border bg-card overflow-hidden relative">
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
+                background: `radial-gradient(ellipse at 50% 0%, ${BLUE}10 0%, transparent 60%)`,
+                pointerEvents: 'none',
+              }} />
+              <div style={{
+                height: 3,
+                background: `linear-gradient(90deg, ${BLUE}, ${BLUE}40 50%, transparent)`,
+              }} />
+              <CardHeader className="relative">
+                <div className="flex items-center gap-3">
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: `${BLUE}12`, border: `1px solid ${BLUE}20`,
+                  }}>
+                    <BarChart3 className="size-4" style={{ color: BLUE }} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-foreground text-base">Overall Market Risk</CardTitle>
+                    <CardDescription className="text-xs mt-0.5">All commodities and signals combined</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center pb-6 space-y-4">
+              <CardContent className="relative flex flex-col items-center justify-center pb-6 space-y-4">
                 <RiskScoreGauge score={overallRisk} size="lg" />
                 <div className="text-center">
-                  <span className="text-sm text-t2">
+                  <span className="text-sm text-muted-foreground">
                     Difference:{' '}
-                    <span
-                      className="font-semibold"
-                      style={{
-                        color: customRisk > overallRisk ? c.coral
-                          : customRisk < overallRisk ? c.green
-                          : c.t2
-                      }}
-                    >
-                      {customRisk > overallRisk ? '↑' : customRisk < overallRisk ? '↓' : '→'}
-                      {' '}{Math.abs(customRisk - overallRisk).toFixed(1)} pts
-                    </span>
+                    {(() => {
+                      const diff = customRisk - overallRisk
+                      const diffColor = diff > 0 ? CORAL : diff < 0 ? GREEN : undefined
+                      return (
+                        <span style={{
+                          fontWeight: 700,
+                          color: diffColor,
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          backgroundColor: diffColor ? `${diffColor}15` : undefined,
+                        }}>
+                          {diff > 0 ? '↑' : diff < 0 ? '↓' : '→'} {Math.abs(diff).toFixed(1)} pts
+                        </span>
+                      )
+                    })()}
                   </span>
                 </div>
               </CardContent>
@@ -192,35 +271,70 @@ export default function CustomTrackerPage() {
 
         {/* ═══ TOP SIGNALS ═══ */}
         {topSignals.length > 0 && (
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card overflow-hidden">
+            <div style={{
+              height: 3,
+              background: `linear-gradient(90deg, ${CORAL}, ${AMBER}60 50%, transparent)`,
+            }} />
             <CardHeader>
-              <CardTitle className="text-foreground">Top Driving Signals</CardTitle>
-              <CardDescription>Most influential factors from your selected commodities</CardDescription>
+              <div className="flex items-center gap-3">
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: `${CORAL}12`, border: `1px solid ${CORAL}20`,
+                }}>
+                  <TrendingUp className="size-4" style={{ color: CORAL }} />
+                </div>
+                <div>
+                  <CardTitle className="text-foreground text-base">Top Driving Signals</CardTitle>
+                  <CardDescription className="text-xs mt-0.5">Most influential factors from your selected commodities</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-0">
                 {topSignals.map((signal, i) => {
-                  const rs = rankStyles[i] || rankStyles[rankStyles.length - 1]
+                  const rankColor = RANK_COLORS[i] || RANK_COLORS[RANK_COLORS.length - 1]
+                  const barWidth = (signal.mean_abs_shap / maxShap) * 100
                   return (
                     <div
                       key={i}
-                      className="flex items-center justify-between py-3 border-b border-border last:border-0"
+                      className="flex items-center justify-between py-3.5 border-b border-border last:border-0"
                     >
                       <div className="flex items-center gap-3">
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                          style={{ backgroundColor: rs.bg, color: rs.text }}
-                        >
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          backgroundColor: `${rankColor}15`,
+                          border: `1px solid ${rankColor}25`,
+                          fontSize: 13, fontWeight: 700, color: rankColor,
+                        }}>
                           {i + 1}
                         </div>
                         <div>
-                          <div className="text-sm text-foreground">{signal.label}</div>
-                          <div className="text-xs font-mono text-muted-foreground">{signal.feature}</div>
+                          <div className="text-sm font-medium text-foreground">{signal.label}</div>
+                          <div className="text-[10px] font-mono text-muted-foreground">{signal.feature}</div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-mono text-t2">{signal.mean_abs_shap.toFixed(5)}</div>
-                        <div className="text-xs text-muted-foreground">SHAP value</div>
+                      <div className="flex items-center gap-4">
+                        {/* Mini bar */}
+                        <div style={{
+                          width: 80, height: 4, borderRadius: 2,
+                          backgroundColor: 'rgba(128,128,128,0.12)',
+                          overflow: 'hidden',
+                        }}>
+                          <div style={{
+                            width: `${barWidth}%`, height: '100%', borderRadius: 2,
+                            backgroundColor: rankColor,
+                            boxShadow: `0 0 4px ${rankColor}40`,
+                          }} />
+                        </div>
+                        <div className="text-right" style={{ minWidth: 80 }}>
+                          <div className="text-sm font-mono font-medium" style={{ color: rankColor }}>
+                            {signal.mean_abs_shap.toFixed(5)}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">SHAP value</div>
+                        </div>
                       </div>
                     </div>
                   )
@@ -232,9 +346,13 @@ export default function CustomTrackerPage() {
 
         {/* ═══ SELECTED PILLS ═══ */}
         {selected.length > 0 && (
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card overflow-hidden">
+            <div style={{
+              height: 3,
+              background: `linear-gradient(90deg, ${PURPLE}, ${PURPLE}00)`,
+            }} />
             <CardHeader>
-              <CardTitle className="text-foreground">Your Selection</CardTitle>
+              <CardTitle className="text-foreground text-base">Your Selection</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
@@ -244,13 +362,20 @@ export default function CustomTrackerPage() {
                     <div
                       key={key}
                       className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-                      style={{ backgroundColor: c.coralSoft, border: `1px solid ${c.coralBorder}` }}
+                      style={{
+                        backgroundColor: `${AMBER}12`,
+                        border: `1px solid ${AMBER}25`,
+                      }}
                     >
-                      <span className="text-sm text-foreground">{commodity.label}</span>
+                      <span className="text-sm font-medium" style={{ color: AMBER }}>{commodity.label}</span>
                       <button
                         onClick={() => toggleCommodity(key)}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                        style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer' }}
+                        className="transition-colors"
+                        style={{
+                          background: 'none', border: 'none', fontSize: 16,
+                          cursor: 'pointer', color: AMBER, opacity: 0.6,
+                          lineHeight: 1,
+                        }}
                       >
                         ×
                       </button>
@@ -263,11 +388,24 @@ export default function CustomTrackerPage() {
         )}
 
         {/* ═══ HOW IT WORKS ═══ */}
-        <Card className="border-border bg-card">
+        <Card className="border-border bg-card overflow-hidden">
+          <div style={{
+            height: 3,
+            background: `linear-gradient(90deg, ${BLUE}, ${BLUE}00)`,
+          }} />
           <CardHeader>
-            <CardTitle className="text-foreground">How Custom Risk Scoring Works</CardTitle>
+            <div className="flex items-center gap-3">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: `${BLUE}12`, border: `1px solid ${BLUE}20`,
+              }}>
+                <Lightbulb className="size-4" style={{ color: BLUE }} />
+              </div>
+              <CardTitle className="text-foreground text-base">How Custom Risk Scoring Works</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-t2">
+          <CardContent className="space-y-3 text-sm text-muted-foreground leading-relaxed">
             <p>
               Your custom risk score is calculated by analyzing <strong className="text-foreground">SHAP contributions</strong> from
               features related to your selected commodities only.
@@ -281,10 +419,10 @@ export default function CustomTrackerPage() {
               influenced primarily by copper prices, natural gas volatility, and related downstream indicators like
               manufacturing PPI and energy sector performance.
             </p>
-            <p className="pt-2 border-t border-border text-xs text-muted-foreground">
+            <div className="pt-3 border-t border-border text-xs text-muted-foreground">
               <strong className="text-foreground">Available commodities:</strong>{' '}
               {commodities.map(cm => cm.label).join(', ')}
-            </p>
+            </div>
           </CardContent>
         </Card>
       </main>

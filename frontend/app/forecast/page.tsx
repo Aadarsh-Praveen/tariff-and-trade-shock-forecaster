@@ -1,14 +1,23 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { TrendingUp, Calendar } from 'lucide-react'
+import { TrendingUp, Calendar, Lightbulb } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { api, isBackendOffline } from '@/lib/api/client'
-import { c, getRiskColor } from '@/lib/theme-colors'
 
-// Extend ForecastPoint to include fields we need
+const CORAL = '#df2531'
+const AMBER = '#f59e0b'
+const GREEN = '#22c55e'
+const BLUE = '#6366f1'
+
+function riskHex(level: string): string {
+  if (level === 'high') return CORAL
+  if (level === 'medium') return AMBER
+  return GREEN
+}
+
 interface ForecastDataPoint {
   date: string
   risk_score: number
@@ -16,46 +25,27 @@ interface ForecastDataPoint {
   is_forecast: boolean
 }
 
-// Derive risk level from score
 function deriveRiskLevel(score: number): string {
   if (score >= 65) return 'high'
   if (score >= 40) return 'medium'
   return 'low'
 }
 
-// Generate demo data when backend is unavailable
 function generateDemoData(): ForecastDataPoint[] {
   const today = new Date()
   const points: ForecastDataPoint[] = []
-
-  // Historical (last 8 weeks)
   const historicalScores = [58, 62, 55, 68, 72, 70, 74, 73]
   for (let i = 8; i >= 1; i--) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i * 7)
+    const date = new Date(today); date.setDate(date.getDate() - i * 7)
     const score = historicalScores[8 - i] ?? 60
-    points.push({
-      date: date.toISOString().split('T')[0],
-      risk_score: score,
-      risk_level: deriveRiskLevel(score),
-      is_forecast: false,
-    })
+    points.push({ date: date.toISOString().split('T')[0], risk_score: score, risk_level: deriveRiskLevel(score), is_forecast: false })
   }
-
-  // Forecast (next 12 weeks) — gradual decline
   const forecastScores = [76, 75, 72, 70, 69, 66, 63, 62, 61, 60, 58, 56]
   for (let i = 0; i < 12; i++) {
-    const date = new Date(today)
-    date.setDate(date.getDate() + (i + 1) * 7)
+    const date = new Date(today); date.setDate(date.getDate() + (i + 1) * 7)
     const score = forecastScores[i] ?? 55
-    points.push({
-      date: date.toISOString().split('T')[0],
-      risk_score: score,
-      risk_level: deriveRiskLevel(score),
-      is_forecast: true,
-    })
+    points.push({ date: date.toISOString().split('T')[0], risk_score: score, risk_level: deriveRiskLevel(score), is_forecast: true })
   }
-
   return points
 }
 
@@ -69,7 +59,6 @@ export default function ForecastPage() {
       try {
         setLoading(true)
         const forecast = await api.getForecast(weeks)
-        // Normalize: ensure risk_level exists on each point
         const normalized = (forecast || []).map((pt: any) => ({
           date: pt.date || pt.forecast_date,
           risk_score: pt.risk_score ?? pt.yhat ?? 0,
@@ -79,28 +68,18 @@ export default function ForecastPage() {
         setData(normalized)
       } catch (err) {
         if (!isBackendOffline(err)) console.error('Forecast error:', err)
-        // Use demo data instead of showing empty state
         setData(generateDemoData())
-      } finally {
-        setLoading(false)
-      }
+      } finally { setLoading(false) }
     }
     fetchData()
   }, [weeks])
 
   const actualData = useMemo(() => data.filter(d => !d.is_forecast), [data])
   const forecastData = useMemo(() => data.filter(d => d.is_forecast), [data])
-
-  // Build chart data — insert bridge point for line continuity
   const chartData = useMemo(() => {
     if (actualData.length === 0) return forecastData
     if (forecastData.length === 0) return actualData
-
-    const bridgePoint: ForecastDataPoint = {
-      ...actualData[actualData.length - 1],
-      is_forecast: false,
-    }
-    return [...actualData, bridgePoint, ...forecastData]
+    return [...actualData, { ...actualData[actualData.length - 1], is_forecast: false }, ...forecastData]
   }, [actualData, forecastData])
 
   if (loading) {
@@ -124,15 +103,27 @@ export default function ForecastPage() {
       <main className="flex-1 space-y-6 p-6">
 
         {/* ═══ FORECAST CHART ═══ */}
-        <Card className="border-border bg-card">
+        <Card className="border-border bg-card overflow-hidden">
+          <div style={{
+            height: 3,
+            background: `linear-gradient(90deg, ${CORAL}, ${AMBER}60 50%, transparent)`,
+          }} />
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[14px] font-bold text-foreground">
-              <TrendingUp className="size-5" />
-              12-Week Risk Forecast
-            </CardTitle>
-            <CardDescription>
-              Recent history (last 8 weeks) + forward prediction (next {weeks} weeks)
-            </CardDescription>
+            <div className="flex items-center gap-3">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: `${CORAL}12`, border: `1px solid ${CORAL}20`,
+              }}>
+                <TrendingUp className="size-4" style={{ color: CORAL }} />
+              </div>
+              <div>
+                <CardTitle className="text-foreground text-base">12-Week Risk Forecast</CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Recent history (last 8 weeks) + forward prediction (next {weeks} weeks)
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {chartData.length > 0 ? (
@@ -140,132 +131,97 @@ export default function ForecastPage() {
                 <ResponsiveContainer width="100%" height={400}>
                   <AreaChart data={chartData}>
                     <defs>
-                      {/* FIX: Use hardcoded hsl for gradient stops — var() can fail in SVG defs */}
                       <linearGradient id="forecast-riskGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(8 77% 61%)" stopOpacity={0.20} />
-                        <stop offset="95%" stopColor="hsl(8 77% 61%)" stopOpacity={0.02} />
+                        <stop offset="5%" stopColor={CORAL} stopOpacity={0.40} />
+                        <stop offset="95%" stopColor={CORAL} stopOpacity={0.05} />
                       </linearGradient>
                       <linearGradient id="forecast-lineGlow" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(38 85% 52%)" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="hsl(38 85% 52%)" stopOpacity={0.02} />
+                        <stop offset="5%" stopColor={AMBER} stopOpacity={0.35} />
+                        <stop offset="95%" stopColor={AMBER} stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={c.grid} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" />
                     <XAxis
-                      dataKey="date"
-                      stroke={c.axis}
-                      tick={{ fill: c.tick, fontSize: 11 }}
-                      tickFormatter={(v) => {
-                        try {
-                          return new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                        } catch { return v }
-                      }}
+                      dataKey="date" stroke="rgba(128,128,128,0.2)"
+                      tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.65 }}
+                      tickFormatter={(v) => { try { return new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) } catch { return v } }}
                     />
-                    <YAxis
-                      stroke={c.axis}
-                      tick={{ fill: c.tick, fontSize: 11 }}
-                      domain={[0, 100]}
-                    />
+                    <YAxis stroke="rgba(128,128,128,0.2)" tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.65 }} domain={[0, 100]} />
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: c.cardBg,
-                        border: `1px solid ${c.border}`,
-                        borderRadius: 10,
-                        color: c.t1,
-                        fontSize: 12,
-                      }}
-                      itemStyle={{ color: c.t1 }}
-                      labelStyle={{ color: c.t3, marginBottom: 4 }}
-                      formatter={(value: any, name: string) => [
-                        `${Number(value).toFixed(1)}`,
-                        name === 'risk_score' ? 'Risk Score' : name,
-                      ]}
-                      labelFormatter={(label) => {
-                        try {
-                          return new Date(label).toLocaleDateString('en-US', {
-                            year: 'numeric', month: 'long', day: 'numeric',
-                          })
-                        } catch { return String(label) }
+                      cursor={{ fill: 'rgba(128,128,128,0.06)' }}
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload?.[0]) return null
+                        const d = payload[0].payload as ForecastDataPoint
+                        const rc = riskHex(d.risk_level)
+                        return (
+                          <div style={{
+                            backgroundColor: '#1c1c1e', border: 'none', borderRadius: 14,
+                            padding: '14px 18px', boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.25)',
+                            minWidth: 200,
+                          }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}>
+                              {(() => { try { return new Date(label).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) } catch { return String(label) } })()}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Risk Score</span>
+                                <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'monospace', color: rc }}>{d.risk_score.toFixed(1)}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Risk Level</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: rc, padding: '1px 6px', borderRadius: 4, backgroundColor: `${rc}18` }}>
+                                  {d.risk_level.toUpperCase()}
+                                </span>
+                              </div>
+                              <div style={{
+                                marginTop: 2, padding: '3px 8px', borderRadius: 6,
+                                backgroundColor: d.is_forecast ? `${AMBER}18` : `${CORAL}18`,
+                                display: 'inline-flex', alignSelf: 'flex-start',
+                              }}>
+                                <span style={{ fontSize: 10, fontWeight: 600, color: d.is_forecast ? AMBER : CORAL }}>
+                                  {d.is_forecast ? '◆ Forecast' : '● Historical'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )
                       }}
                     />
-
-                    {/* Threshold reference lines */}
-                    <ReferenceLine y={65} stroke={c.coral} strokeDasharray="6 4" strokeOpacity={0.3} />
-                    <ReferenceLine y={40} stroke={c.amber} strokeDasharray="6 4" strokeOpacity={0.3} />
-
-                    {/* Glow under main line */}
+                    <ReferenceLine y={65} stroke={CORAL} strokeDasharray="6 4" strokeOpacity={0.35} />
+                    <ReferenceLine y={40} stroke={AMBER} strokeDasharray="6 4" strokeOpacity={0.35} />
+                    <Area type="monotone" dataKey="risk_score" stroke="none" fill="url(#forecast-lineGlow)" fillOpacity={1} dot={false} activeDot={false} />
                     <Area
-                      type="monotone"
-                      dataKey="risk_score"
-                      stroke="none"
-                      fill="url(#forecast-lineGlow)"
-                      fillOpacity={1}
-                      dot={false}
-                      activeDot={false}
-                    />
-
-                    {/* Main risk area */}
-                    <Area
-                      type="monotone"
-                      dataKey="risk_score"
-                      stroke={c.amber}
-                      strokeWidth={2.5}
-                      fill="url(#forecast-riskGrad)"
-                      name="Risk Score"
+                      type="monotone" dataKey="risk_score" stroke={AMBER} strokeWidth={2.5}
+                      fill="url(#forecast-riskGrad)" name="Risk Score"
                       dot={(props: any) => {
-                        // FIX: safely access point from chartData
                         if (!props || typeof props.index !== 'number') return <></>
                         const point = chartData[props.index]
                         if (!point || typeof props.cx !== 'number' || typeof props.cy !== 'number') return <></>
-
-                        if (point.is_forecast) {
-                          return (
-                            <circle
-                              key={`fc-dot-${props.index}`}
-                              cx={props.cx}
-                              cy={props.cy}
-                              r={4}
-                              fill={c.amber}
-                              stroke={c.pageBg}
-                              strokeWidth={2}
-                            />
-                          )
-                        }
-                        // Show every 2nd historical dot to reduce clutter
-                        if (props.index % 2 !== 0) return <></>
-                        return (
-                          <circle
-                            key={`hist-dot-${props.index}`}
-                            cx={props.cx}
-                            cy={props.cy}
-                            r={2.5}
-                            fill={c.coral}
-                            stroke="none"
-                          />
-                        )
+                        if (point.is_forecast) return <circle key={`fc-${props.index}`} cx={props.cx} cy={props.cy} r={4} fill={AMBER} stroke="var(--background)" strokeWidth={2} />
+                        return <circle key={`h-${props.index}`} cx={props.cx} cy={props.cy} r={4} fill={CORAL} stroke="var(--background)" strokeWidth={2} />
                       }}
-                      activeDot={{ r: 6, fill: c.amber, stroke: c.pageBg, strokeWidth: 2 }}
+                      activeDot={{ r: 6, fill: AMBER, stroke: 'var(--background)', strokeWidth: 2 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
 
                 {/* Legend */}
-                <div className="flex items-center justify-center gap-6 mt-4 text-[11px]">
+                <div className="flex items-center justify-center gap-8 mt-5 text-[11px]">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-coral" />
-                    <span className="text-t2">Actual Data</span>
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CORAL }} />
+                    <span className="text-muted-foreground">Actual Data</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-0.5 rounded bg-amber" />
-                    <span className="text-t2">Forecast Line</span>
+                    <div className="w-8 h-0.5 rounded" style={{ backgroundColor: AMBER }} />
+                    <span className="text-muted-foreground">Forecast Line</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-8 border-t-2 border-dashed border-coral opacity-30" />
-                    <span className="text-t3">High Risk (65)</span>
+                    <div className="w-8 border-t-2 border-dashed" style={{ borderColor: CORAL, opacity: 0.35 }} />
+                    <span className="text-muted-foreground">High Risk (65)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-8 border-t-2 border-dashed border-amber opacity-30" />
-                    <span className="text-t3">Medium Risk (40)</span>
+                    <div className="w-8 border-t-2 border-dashed" style={{ borderColor: AMBER, opacity: 0.35 }} />
+                    <span className="text-muted-foreground">Medium Risk (40)</span>
                   </div>
                 </div>
               </>
@@ -279,33 +235,38 @@ export default function ForecastPage() {
         {forecastData.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {forecastData.slice(0, 4).map((point, i) => {
-              const riskColor = getRiskColor(point.risk_level)
+              const rc = riskHex(point.risk_level)
               return (
-                <Card key={`fc-card-${point.date}-${i}`} className="border-border bg-card">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-[12px] font-semibold text-muted-foreground">
-                      <Calendar className="size-4" />
-                      Week {i + 1}
-                    </CardTitle>
+                <Card key={`fc-card-${point.date}-${i}`} className="border-border bg-card overflow-hidden relative">
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
+                    background: `radial-gradient(ellipse at 50% 0%, ${rc}10 0%, transparent 60%)`,
+                    pointerEvents: 'none',
+                  }} />
+                  <div style={{
+                    height: 3,
+                    background: `linear-gradient(90deg, ${rc}, ${rc}40 50%, transparent)`,
+                  }} />
+                  <CardHeader className="relative pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-[12px] font-semibold text-muted-foreground">
+                        <Calendar className="size-4" />
+                        Week {i + 1}
+                      </CardTitle>
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 5,
+                        backgroundColor: `${rc}15`, color: rc, letterSpacing: '0.5px',
+                      }}>
+                        {point.risk_level?.toUpperCase()}
+                      </span>
+                    </div>
                     <CardDescription className="text-[10px]">
-                      {(() => {
-                        try {
-                          return new Date(point.date).toLocaleDateString('en-US', {
-                            month: 'short', day: 'numeric', year: 'numeric',
-                          })
-                        } catch { return point.date }
-                      })()}
+                      {(() => { try { return new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) } catch { return point.date } })()}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-[28px] font-bold tabular-nums" style={{ color: riskColor }}>
+                  <CardContent className="relative">
+                    <div className="text-[28px] font-bold tabular-nums" style={{ color: rc }}>
                       {typeof point.risk_score === 'number' ? point.risk_score.toFixed(1) : 'N/A'}
-                    </div>
-                    <div
-                      className="text-[10px] font-semibold mt-1 uppercase tracking-wider"
-                      style={{ color: riskColor }}
-                    >
-                      {point.risk_level?.toUpperCase() || 'UNKNOWN'} RISK
                     </div>
                   </CardContent>
                 </Card>
@@ -315,16 +276,24 @@ export default function ForecastPage() {
         )}
 
         {/* ═══ ABOUT ═══ */}
-        <Card className="border-blue bg-blue-faint">
+        <Card className="border-border bg-card overflow-hidden">
+          <div style={{
+            height: 3,
+            background: `linear-gradient(90deg, ${BLUE}, ${BLUE}00)`,
+          }} />
           <CardHeader>
-            <div className="flex items-start gap-2">
-              <div className="rounded-md bg-blue-soft p-1.5">
-                <TrendingUp className="size-4 text-blue" />
+            <div className="flex items-center gap-3">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: `${BLUE}12`, border: `1px solid ${BLUE}20`,
+              }}>
+                <Lightbulb className="size-4" style={{ color: BLUE }} />
               </div>
-              <CardTitle className="text-[14px] font-bold text-foreground">About This Forecast</CardTitle>
+              <CardTitle className="text-foreground text-base">About This Forecast</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3 text-[12px] text-t2 leading-relaxed">
+          <CardContent className="space-y-3 text-[12px] text-muted-foreground leading-relaxed">
             <p>
               This forecast is generated using <strong className="text-foreground font-semibold">Facebook Prophet</strong>, a time-series forecasting model
               optimized for data with strong seasonal patterns and multiple seasons of historical data.
@@ -337,9 +306,11 @@ export default function ForecastPage() {
               <strong className="text-foreground font-semibold">Confidence intervals</strong> (not shown in simplified view) indicate the range of
               likely outcomes. Actual risk may vary based on unforeseen events like policy changes, natural disasters, or geopolitical shocks.
             </p>
-            <div className="pt-3 border-t border-blue text-[11px] text-muted-foreground">
-              <strong className="text-foreground">Model Performance:</strong>
-              <span className="text-t2"> 98.4% F1 Score, 96.8% Precision, 100% Recall</span>
+            <div className="pt-3 border-t border-border text-[11px] text-muted-foreground">
+              <strong className="text-foreground">Model Performance:</strong>{' '}
+              <span style={{ color: GREEN, fontWeight: 600 }}>98.4%</span> F1 Score,{' '}
+              <span style={{ color: GREEN, fontWeight: 600 }}>96.8%</span> Precision,{' '}
+              <span style={{ color: GREEN, fontWeight: 600 }}>100%</span> Recall
             </div>
           </CardContent>
         </Card>

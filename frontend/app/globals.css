@@ -117,7 +117,6 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
 
-  /* Now these resolve to valid CSS colors like hsl(270 27% 93%) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -167,7 +166,6 @@
     @apply border-border outline-ring/50;
   }
 
-  /* Dark theme gradient outer shell */
   html {
     background: linear-gradient(145deg, #0f0a1f 0%, #0a0812 40%, #060609 100%);
     min-height: 100vh;
@@ -207,31 +205,26 @@
     min-height: calc(100vh - 16px);
   }
 
-  /* Section labels */
   .section-label {
     font-size: 10px; font-weight: 600;
     text-transform: uppercase; letter-spacing: 1.5px;
     color: var(--muted-foreground);
   }
 
-  /* Status badges */
   .status-badge { padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 600; }
   .status-badge-high { background-color: color-mix(in srgb, var(--risk-high) 18%, transparent); color: var(--risk-high); }
   .status-badge-medium { background-color: color-mix(in srgb, var(--risk-medium) 18%, transparent); color: var(--risk-medium); }
   .status-badge-low { background-color: color-mix(in srgb, var(--risk-low) 18%, transparent); color: var(--risk-low); }
 
-  /* Progress bars */
   .progress-track { height: 4px; background-color: color-mix(in srgb, var(--muted-foreground) 10%, transparent); border-radius: 4px; overflow: hidden; }
   .progress-fill { height: 100%; transition: width 0.4s ease; }
 
   .data-source-badge { font-size: 8px; padding: 2px 7px; border-radius: 4px; background: var(--muted); color: var(--muted-foreground); }
 
-  /* Toggle chips */
   .toggle-chip { padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; transition: all 0.15s ease; cursor: pointer; }
   .toggle-chip-inactive { background: var(--secondary); border: 1px solid var(--border); color: var(--muted-foreground); }
   .toggle-chip-active { background: color-mix(in srgb, var(--primary) 7%, transparent); border: 1.5px solid color-mix(in srgb, var(--primary) 27%, transparent); color: var(--primary); }
 
-  /* Stat card */
   .stat-card { border-left-width: 3px; border-radius: 3px 13px 13px 3px; }
   .border-l-coral { border-left-color: var(--risk-high); }
   .border-l-amber { border-left-color: var(--risk-medium); }
@@ -239,10 +232,8 @@
   .border-l-blue { border-left-color: var(--risk-blue); }
   .border-l-purple { border-left-color: var(--risk-purple); }
 
-  /* Top bar blur */
   .top-bar-blur { background: color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 
-  /* Accent backgrounds — using color-mix for opacity */
   .bg-coral-faint { background-color: color-mix(in srgb, var(--risk-high) 7%, transparent); }
   .bg-coral-soft { background-color: color-mix(in srgb, var(--risk-high) 15%, transparent); }
   .bg-amber-faint { background-color: color-mix(in srgb, var(--risk-medium) 7%, transparent); }
@@ -254,21 +245,18 @@
   .bg-purple-faint { background-color: color-mix(in srgb, var(--risk-purple) 7%, transparent); }
   .bg-purple-soft { background-color: color-mix(in srgb, var(--risk-purple) 15%, transparent); }
 
-  /* Accent borders */
   .border-coral { border-color: color-mix(in srgb, var(--risk-high) 15%, transparent); }
   .border-amber { border-color: color-mix(in srgb, var(--risk-medium) 15%, transparent); }
   .border-green { border-color: color-mix(in srgb, var(--risk-low) 15%, transparent); }
   .border-blue { border-color: color-mix(in srgb, var(--risk-blue) 15%, transparent); }
   .border-purple { border-color: color-mix(in srgb, var(--risk-purple) 15%, transparent); }
 
-  /* Accent text */
   .text-coral { color: var(--risk-high); }
   .text-amber { color: var(--risk-medium); }
   .text-green { color: var(--risk-low); }
   .text-blue { color: var(--risk-blue); }
   .text-purple { color: var(--risk-purple); }
 
-  /* Text hierarchy — t1/t2/t3/t4 */
   .text-100, .text-t1 { color: var(--foreground); }
   .text-70, .text-t2 { color: color-mix(in srgb, var(--foreground) 65%, transparent); }
   .text-45, .text-t3 { color: var(--muted-foreground); }
@@ -278,7 +266,6 @@
   .light .text-45, .light .text-t3 { color: var(--muted-foreground); }
   .light .text-25, .light .text-t4 { color: color-mix(in srgb, var(--muted-foreground) 60%, transparent); }
 
-  /* Red opacity backgrounds */
   .bg-red-4 { background-color: color-mix(in srgb, var(--risk-high) 4%, transparent); }
   .bg-red-8 { background-color: color-mix(in srgb, var(--risk-high) 8%, transparent); }
   .bg-red-12 { background-color: color-mix(in srgb, var(--risk-high) 12%, transparent); }
@@ -288,4 +275,32 @@
   .border-red-30 { border-color: color-mix(in srgb, var(--risk-high) 30%, transparent); }
   .border-red-40 { border-color: color-mix(in srgb, var(--risk-high) 40%, transparent); }
   .border-red-60 { border-color: color-mix(in srgb, var(--risk-high) 60%, transparent); }
+
+  /* ═══ SidebarInset gap fix ═══ */
+  [data-sidebar="inset"] ~ main,
+  [data-slot="sidebar-inset"] {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+    max-width: none !important;
+  }
+
+  /* ═══ Slim overlay scrollbars ═══ */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128,128,128,0.25) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: rgba(128,128,128,0.25);
+    border-radius: 3px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(128,128,128,0.4);
+  }
 }

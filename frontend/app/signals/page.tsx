@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Activity, TrendingUp } from 'lucide-react'
+import { Activity, TrendingUp, Lightbulb } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -9,12 +9,11 @@ import { api, isBackendOffline } from '@/lib/api/client'
 import { c } from '@/lib/theme-colors'
 
 /*
- * PATTERN FOR CHART PAGES:
- * - Card/text: Use Tailwind classes (text-foreground, bg-card, etc.) — they now work in both themes
- * - Recharts: Use `c` tokens from theme-colors.ts — Recharts needs inline style values
- * - SVG gradient stops: Use hardcoded hsl() — var() can fail in some browsers
- * - Buttons: Use Tailwind where possible, inline style for custom states
+ * CHART COLOR CONSTANTS — hardcoded for SVG compatibility
  */
+const CORAL = '#df2531'
+const AMBER = '#f59e0b'
+const BLUE = '#6366f1'
 
 const AVAILABLE_SIGNALS = [
   { key: 'natural_gas_price', label: 'Natural Gas Price' },
@@ -66,13 +65,31 @@ export default function SignalsPage() {
       
       <main className="flex-1 space-y-6 p-6">
 
-        {/* Signal Selector — Tailwind classes for card, inline for buttons */}
-        <Card className="border-border bg-card">
+        {/* ═══ SIGNAL SELECTOR ═══ */}
+        <Card className="border-border bg-card overflow-hidden">
+          <div style={{
+            height: 3,
+            background: `linear-gradient(90deg, ${AMBER}, ${AMBER}40 50%, transparent)`,
+          }} />
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Activity className="size-5" />Select Signal
-            </CardTitle>
-            <CardDescription>Choose an economic indicator to view its forecast</CardDescription>
+            <div className="flex items-center gap-3">
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: `${AMBER}12`,
+                border: `1px solid ${AMBER}20`,
+              }}>
+                <Activity className="size-4" style={{ color: AMBER }} />
+              </div>
+              <div>
+                <CardTitle className="text-foreground text-base">Select Signal</CardTitle>
+                <CardDescription className="text-xs mt-0.5">Choose an economic indicator to view its forecast</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -80,77 +97,150 @@ export default function SignalsPage() {
                 const isActive = selectedSignal === signal.key
                 return (
                   <button key={signal.key} onClick={() => setSelectedSignal(signal.key)}
-                    className="rounded-md px-4 py-2 text-sm font-medium transition-all"
+                    className="rounded-lg px-4 py-2.5 text-sm font-medium transition-all"
                     style={{
-                      backgroundColor: isActive ? c.coralSoft : 'transparent',
-                      border: `1px solid ${isActive ? c.coralBorder : c.border}`,
-                      color: isActive ? c.coral : c.t2, cursor: 'pointer',
+                      backgroundColor: isActive ? `${AMBER}12` : 'transparent',
+                      border: `1px solid ${isActive ? `${AMBER}35` : 'rgba(128,128,128,0.15)'}`,
+                      color: isActive ? AMBER : undefined,
+                      cursor: 'pointer',
                     }}
-                  >{signal.label}</button>
+                  >
+                    <span className={isActive ? '' : 'text-muted-foreground'}>{signal.label}</span>
+                  </button>
                 )
               })}
             </div>
           </CardContent>
         </Card>
 
-        {/* Chart — Recharts needs inline styles via `c` tokens */}
+        {/* ═══ CHART ═══ */}
         {loading ? (
           <Card className="border-border bg-card">
             <CardContent className="py-20 text-center text-muted-foreground">Loading forecast data...</CardContent>
           </Card>
         ) : chartData.length > 0 ? (
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card overflow-hidden">
+            <div style={{
+              height: 3,
+              background: `linear-gradient(90deg, ${CORAL}, ${AMBER}60 50%, transparent)`,
+            }} />
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <TrendingUp className="size-5" />
-                {AVAILABLE_SIGNALS.find(s => s.key === selectedSignal)?.label} Forecast
-              </CardTitle>
-              <CardDescription>Historical data + 12-week Prophet forecast with confidence intervals</CardDescription>
+              <div className="flex items-center gap-3">
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: `${CORAL}12`,
+                  border: `1px solid ${CORAL}20`,
+                }}>
+                  <TrendingUp className="size-4" style={{ color: CORAL }} />
+                </div>
+                <div>
+                  <CardTitle className="text-foreground text-base">
+                    {AVAILABLE_SIGNALS.find(s => s.key === selectedSignal)?.label} Forecast
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-0.5">Historical data + 12-week Prophet forecast with confidence intervals</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
                 <AreaChart data={chartData}>
                   <defs>
-                    {/* SVG gradient stops: hardcoded hsl() — var() can fail in some browsers */}
                     <linearGradient id="confUp" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(8 77% 61%)" stopOpacity={0.35}/>
-                      <stop offset="95%" stopColor="hsl(8 77% 61%)" stopOpacity={0.08}/>
+                      <stop offset="5%" stopColor={CORAL} stopOpacity={0.35}/>
+                      <stop offset="95%" stopColor={CORAL} stopOpacity={0.08}/>
                     </linearGradient>
                     <linearGradient id="lineGlow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(38 92% 60%)" stopOpacity={0.25}/>
-                      <stop offset="95%" stopColor="hsl(38 92% 60%)" stopOpacity={0.02}/>
+                      <stop offset="5%" stopColor={AMBER} stopOpacity={0.25}/>
+                      <stop offset="95%" stopColor={AMBER} stopOpacity={0.02}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={c.grid} />
-                  <XAxis dataKey="forecast_date" stroke={c.axis} tick={{ fill: c.tick, fontSize: 11 }}
+                  <XAxis dataKey="forecast_date" stroke={c.axis}
+                    tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.65 }}
                     tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
-                  <YAxis stroke={c.axis} tick={{ fill: c.tick, fontSize: 11 }} />
+                  <YAxis stroke={c.axis} tick={{ fill: 'currentColor', fontSize: 11, opacity: 0.65 }} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: c.cardBg, border: `1px solid ${c.border}`, borderRadius: 10, color: c.t1, fontSize: 12 }}
-                    itemStyle={{ color: c.t1 }} labelStyle={{ color: c.t3 }}
-                    formatter={(v: any, name: string) => [Number(v).toFixed(2), name === 'yhat' ? 'Forecast' : name === 'yhat_upper' ? 'Upper' : name === 'yhat_lower' ? 'Lower' : name]}
-                    labelFormatter={(l) => new Date(l).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    cursor={{ fill: 'rgba(128,128,128,0.06)' }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.[0]) return null
+                      const d = payload[0].payload
+                      return (
+                        <div style={{
+                          backgroundColor: '#1c1c1e',
+                          border: 'none',
+                          borderRadius: 14,
+                          padding: '14px 18px',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.25)',
+                          minWidth: 200,
+                        }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}>
+                            {new Date(label).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Forecast</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'monospace', color: AMBER }}>{Number(d.yhat).toFixed(2)}</span>
+                            </div>
+                            {d.yhat_upper && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Range</span>
+                                <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.7)' }}>
+                                  {Number(d.yhat_lower).toFixed(1)} – {Number(d.yhat_upper).toFixed(1)}
+                                </span>
+                              </div>
+                            )}
+                            <div style={{
+                              marginTop: 2,
+                              padding: '3px 8px',
+                              borderRadius: 6,
+                              backgroundColor: d.is_forecast ? `${AMBER}18` : `${CORAL}18`,
+                              display: 'inline-flex',
+                              alignSelf: 'flex-start',
+                            }}>
+                              <span style={{ fontSize: 10, fontWeight: 600, color: d.is_forecast ? AMBER : CORAL }}>
+                                {d.is_forecast ? '◆ Forecast' : '● Historical'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    }}
                   />
-                  <Area type="monotone" dataKey="yhat_upper" stroke={c.coralBorder} strokeWidth={1} fill="url(#confUp)" fillOpacity={1} />
-                  <Area type="monotone" dataKey="yhat_lower" stroke={c.coralBorder} strokeWidth={1} fill={c.pageBg} fillOpacity={0.85} />
+                  <Area type="monotone" dataKey="yhat_upper" stroke={`${CORAL}50`} strokeWidth={1} fill="url(#confUp)" fillOpacity={1} />
+                  <Area type="monotone" dataKey="yhat_lower" stroke={`${CORAL}50`} strokeWidth={1} fill="var(--background)" fillOpacity={0.85} />
                   <Area type="monotone" dataKey="yhat" stroke="none" fill="url(#lineGlow)" fillOpacity={1} />
-                  <Line type="monotone" dataKey="yhat" stroke={c.amber} strokeWidth={2.5}
+                  <Line type="monotone" dataKey="yhat" stroke={AMBER} strokeWidth={2.5}
                     dot={(props: any) => {
                       const pt = chartData[props.index]
                       if (!pt) return <></>
-                      if (pt.is_forecast) return <circle cx={props.cx} cy={props.cy} r={4} fill={c.amber} stroke={c.pageBg} strokeWidth={2} />
+                      if (pt.is_forecast) return <circle cx={props.cx} cy={props.cy} r={4} fill={AMBER} stroke="var(--background)" strokeWidth={2} />
                       if (props.index % 4 !== 0) return <></>
-                      return <circle cx={props.cx} cy={props.cy} r={2.5} fill={c.coral} stroke="none" />
+                      return <circle cx={props.cx} cy={props.cy} r={3} fill={CORAL} stroke="var(--background)" strokeWidth={1.5} />
                     }}
-                    activeDot={{ r: 6, fill: c.amber, stroke: c.pageBg, strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: AMBER, stroke: 'var(--background)', strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
-              {/* Legend — use inline style for color swatches, Tailwind for text */}
-              <div className="flex items-center justify-center gap-6 mt-4 text-[11px]">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.coral }} /><span className="text-muted-foreground">Historical</span></div>
-                <div className="flex items-center gap-2"><div className="w-8 h-0.5 rounded" style={{ backgroundColor: c.amber }} /><span className="text-muted-foreground">Forecast</span></div>
-                <div className="flex items-center gap-2"><div className="w-8 h-3 rounded-sm" style={{ backgroundColor: c.coralFaint }} /><span className="text-muted-foreground">Confidence</span></div>
+
+              {/* Legend */}
+              <div className="flex items-center justify-center gap-8 mt-5 text-[11px]">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CORAL }} />
+                  <span className="text-muted-foreground">Historical</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-0.5 rounded" style={{ backgroundColor: AMBER }} />
+                  <span className="text-muted-foreground">Forecast</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-3 rounded-sm" style={{ backgroundColor: `${CORAL}20` }} />
+                  <span className="text-muted-foreground">Confidence</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -160,47 +250,81 @@ export default function SignalsPage() {
           </Card>
         )}
 
-        {/* Stats — pure Tailwind, no inline styles needed */}
+        {/* ═══ STATS ═══ */}
         {forecastPoints.length > 0 && (
           <div className="grid gap-4 md:grid-cols-4">
-            {[
-              { label: 'Current Value', value: historicalData.length > 0 ? historicalData[historicalData.length - 1].yhat.toFixed(2) : 'N/A' },
-              { label: '12-Week Forecast', value: forecastPoints[forecastPoints.length - 1]?.yhat.toFixed(2) || 'N/A' },
-            ].map((s) => (
-              <Card key={s.label} className="border-border bg-card">
-                <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{s.label}</CardTitle></CardHeader>
-                <CardContent><div className="text-2xl font-bold text-foreground">{s.value}</div></CardContent>
-              </Card>
-            ))}
-            <Card className="border-border bg-card">
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Expected Change</CardTitle></CardHeader>
-              <CardContent>
-                {historicalData.length > 0 && forecastPoints.length > 0 && (() => {
-                  const cur = historicalData[historicalData.length - 1].yhat
-                  const fc = forecastPoints[forecastPoints.length - 1].yhat
-                  const up = fc > cur
-                  return <div className={`text-2xl font-bold ${up ? 'text-coral' : 'text-green'}`}>{up ? '↑' : '↓'} {Math.abs(((fc - cur) / cur) * 100).toFixed(1)}%</div>
-                })()}
-              </CardContent>
-            </Card>
-            <Card className="border-border bg-card">
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Data Points</CardTitle></CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">{forecastData.length}</div>
-                <div className="text-xs text-muted-foreground mt-1">{historicalData.length} historical + {forecastPoints.length} forecast</div>
-              </CardContent>
-            </Card>
+            {(() => {
+              const curVal = historicalData.length > 0 ? historicalData[historicalData.length - 1].yhat : null
+              const fcVal = forecastPoints[forecastPoints.length - 1]?.yhat ?? null
+              const up = curVal && fcVal ? fcVal > curVal : null
+              const changePct = curVal && fcVal ? Math.abs(((fcVal - curVal) / curVal) * 100) : null
+
+              const stats = [
+                { label: 'Current Value', value: curVal ? curVal.toFixed(2) : 'N/A', color: AMBER },
+                { label: '12-Week Forecast', value: fcVal ? fcVal.toFixed(2) : 'N/A', color: BLUE },
+                { label: 'Expected Change', value: changePct !== null ? `${up ? '↑' : '↓'} ${changePct.toFixed(1)}%` : 'N/A', color: up ? CORAL : '#22c55e' },
+                { label: 'Data Points', value: String(forecastData.length), sub: `${historicalData.length} historical + ${forecastPoints.length} forecast`, color: '#8b5cf6' },
+              ]
+
+              return stats.map((s: any) => {
+                const isChangeCard = s.label === 'Expected Change'
+                return (
+                  <Card key={s.label} className="border-border bg-card overflow-hidden">
+                    <div style={{
+                      height: 3,
+                      background: `linear-gradient(90deg, ${s.color}, ${s.color}40 50%, transparent)`,
+                    }} />
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">{s.label}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div
+                        className="text-2xl font-bold tabular-nums"
+                        style={isChangeCard ? { color: s.color } : undefined}
+                      >
+                        {isChangeCard ? (
+                          <span style={{ color: s.color }}>{s.value}</span>
+                        ) : (
+                          <span className="text-foreground">{s.value}</span>
+                        )}
+                      </div>
+                      {s.sub && <div className="text-xs text-muted-foreground mt-1">{s.sub}</div>}
+                    </CardContent>
+                  </Card>
+                )
+              })
+            })()}
           </div>
         )}
 
-        {/* About — pure Tailwind */}
-        <Card className="border-border bg-card">
-          <CardHeader><CardTitle className="text-foreground">About Prophet Forecasting</CardTitle></CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
+        {/* ═══ ABOUT ═══ */}
+        <Card className="border-border bg-card overflow-hidden">
+          <div style={{
+            height: 3,
+            background: `linear-gradient(90deg, ${BLUE}, ${BLUE}00)`,
+          }} />
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: `${BLUE}12`,
+                border: `1px solid ${BLUE}20`,
+              }}>
+                <Lightbulb className="size-4" style={{ color: BLUE }} />
+              </div>
+              <CardTitle className="text-foreground text-base">About Prophet Forecasting</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground leading-relaxed">
             <p><strong className="text-foreground">Prophet</strong> is a procedure developed by Facebook's Core Data Science team for forecasting time series data.</p>
             <p>It works best with time series that have strong seasonal effects and several seasons of historical data.</p>
-            <p>The <strong className="text-foreground">confidence interval</strong> (shaded area) represents the range where we expect the actual value to fall with high probability.</p>
-            <div className="pt-2 border-t border-border text-xs text-muted-foreground">
+            <p>The <strong className="text-foreground">confidence interval</strong> (<span style={{ color: CORAL, fontWeight: 600 }}>shaded area</span>) represents the range where we expect the actual value to fall with high probability.</p>
+            <div className="pt-3 border-t border-border text-xs text-muted-foreground">
               <strong className="text-foreground">Available signals:</strong> Natural Gas, Crude Oil, Copper, Import Price Index, Trade Balance, CPI
             </div>
           </CardContent>
