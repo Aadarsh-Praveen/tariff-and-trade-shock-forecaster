@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
 const inter = Inter({ 
@@ -57,6 +58,7 @@ export default function RootLayout({
               </DashboardLayout>
             </div>
           </div>
+          <Toaster />
           <Analytics />
         </ThemeProvider>
       </body>

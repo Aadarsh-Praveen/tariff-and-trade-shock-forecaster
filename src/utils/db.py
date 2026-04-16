@@ -11,6 +11,8 @@ Tables used:
   - reddit_sentiment: Reddit weekly signals (date, disruption_post_count, disruption_ratio, ...)
 """
 
+import os
+import httpx
 from supabase import create_client, Client
 from src.utils.config import config
 from src.utils.logger import get_logger
@@ -27,8 +29,28 @@ def get_client() -> Client:
             raise ValueError(
                 "SUPABASE_URL and SUPABASE_KEY must be set in .env"
             )
+        
+        os.environ['HTTPX_LOG_LEVEL'] = 'warning'
+        
         _client = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
-        logger.info(f"Supabase client connected to {config.SUPABASE_URL}")
+        
+        try:
+            old_session = _client.postgrest.session
+            _client.postgrest.session = httpx.Client(
+                http2=False,
+                limits=httpx.Limits(
+                    max_connections=100,
+                    max_keepalive_connections=20
+                ),
+                timeout=httpx.Timeout(30.0),
+                base_url=str(old_session._base_url) if hasattr(old_session, '_base_url') else None,
+                headers=old_session.headers if hasattr(old_session, 'headers') else {},
+            )
+            logger.info(f"Supabase client connected to {config.SUPABASE_URL} (HTTP/1.1 forced)")
+        except Exception as e:
+            logger.warning(f"Could not override HTTP client, using defaults: {e}")
+            logger.info(f"Supabase client connected to {config.SUPABASE_URL}")
+    
     return _client
 
 

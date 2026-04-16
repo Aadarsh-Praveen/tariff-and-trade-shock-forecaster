@@ -1,155 +1,123 @@
-# RiskGuard Frontend - Supply Chain Risk Dashboard
+# Frontend Setup Guide
 
-A modern Next.js dashboard for supply chain risk assessment with ML-powered predictions, real-time monitoring, and comprehensive analytics.
+## Prerequisites
 
-## Features
+- Node.js 18+ and npm (or yarn/pnpm)
+- Backend API running on `http://localhost:8000`
 
-- **Dark/Light Theme Toggle** - Seamless theme switching with persistence
-- **ML Model Integration** - Real-time risk predictions and forecasts
-- **Interactive Dashboard** - Comprehensive risk metrics and visualizations
-- **Supplier Monitoring** - Track and analyze supplier risk profiles
-- **Alert Management** - Real-time risk alerts and notifications
-- **Trend Analysis** - Historical and predictive risk trends
-- **Report Generation** - Automated risk reporting
-- **Offline Mode** - Demo data when backend is unavailable
+## Installation
 
-## Tech Stack
-
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: Radix UI + shadcn/ui
-- **Charts**: Recharts
-- **State Management**: React Context
-- **Icons**: Lucide React
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- Backend API running on `http://localhost:8000` (optional - works in offline mode)
-
-### Installation
-
+1. Navigate to the frontend directory:
 ```bash
 cd frontend
-npm install
 ```
 
-### Development
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+## Environment Setup
+
+Create a `.env.local` file in the `frontend` directory:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## Running the Development Server
 
 ```bash
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+The app will be available at `http://localhost:3000`
 
-### Build
+## Building for Production
 
 ```bash
 npm run build
 npm start
 ```
 
-## Theme System
+## Common Issues
 
-The dashboard supports both dark and light themes with full text visibility.
+### Module Not Found: '@/lib/api/client'
 
-### Dark Mode (Default)
-- Pure black background `#000000`
-- White text for all content
-- Red accent `#df2531` for high-risk indicators
+This error occurs if the `lib/api/client.ts` file is missing. Make sure you have pulled the latest changes from the repository.
 
-### Light Mode
-- Pure white background `#ffffff`
-- Black text for all content
-- Red accent `#df2531` for high-risk indicators
+### Backend Connection Failed
 
-### Toggle Theme
-Click the sun/moon icon in the top-right header to switch themes. Your preference is saved to localStorage.
+If you see "Backend Offline" messages:
+1. Ensure the backend API is running on port 8000
+2. Check that `NEXT_PUBLIC_API_URL` in `.env.local` points to the correct backend URL
+3. Verify CORS is enabled on the backend
 
-## Pages
+### Build Errors
 
-1. **Dashboard** (`/`) - Main overview with key metrics
-2. **Model** (`/model`) - ML model details and predictions
-3. **Signals** (`/signals`) - Leading indicators tracking
-4. **Events** (`/events`) - Risk event monitoring
-5. **Custom Tracker** (`/custom-tracker`) - Custom metric tracking
-6. **Sectors** (`/sectors`) - Industry sector analysis
-7. **Forecast** (`/forecast`) - Risk forecasting
-8. **Alerts** (`/alerts`) - Alert management
-9. **Suppliers** (`/suppliers`) - Supplier analysis
-10. **Risk Matrix** (`/risk-matrix`) - Likelihood vs Impact matrix
-11. **Reports** (`/reports`) - Report generation
-12. **Trends** (`/trends`) - Trend analysis
-13. **Settings** (`/settings`) - Configuration
+If you encounter build errors after pulling:
+1. Delete `node_modules` and `.next` folders:
+   ```bash
+   rm -rf node_modules .next
+   ```
+2. Reinstall dependencies:
+   ```bash
+   npm install
+   ```
+3. Clear Next.js cache:
+   ```bash
+   npm run build -- --no-cache
+   ```
 
-## API Integration
+## Tech Stack
 
-The frontend connects to the FastAPI backend at `http://localhost:8000`. If the backend is not running, it automatically switches to demo mode with sample data.
-
-### Key Endpoints
-- `GET /api/dashboard/summary` - Dashboard metrics
-- `GET /api/risk/history` - Historical risk data
-- `GET /api/model/info` - ML model information
-- `GET /api/shap/summary` - SHAP values
-- `GET /api/signals` - Leading indicators
+- **Framework**: Next.js 15.2.0 (App Router)
+- **UI Library**: React 19
+- **Styling**: Tailwind CSS
+- **Charts**: Recharts
+- **Icons**: Lucide React
+- **Components**: Radix UI primitives
 
 ## Project Structure
 
 ```
 frontend/
-├── app/                    # Next.js app router pages
-│   ├── page.tsx           # Dashboard home
-│   ├── model/             # ML model page
-│   ├── signals/           # Signals page
-│   ├── events/            # Events page
-│   └── ...                # Other pages
-├── components/            # React components
-│   ├── dashboard/         # Dashboard-specific components
-│   ├── ui/                # Reusable UI components (shadcn)
-│   ├── risk/              # Risk visualization components
-│   ├── suppliers/         # Supplier components
-│   ├── alerts/            # Alert components
-│   ├── theme-provider.tsx # Theme context provider
-│   └── theme-toggle.tsx   # Theme toggle button
-├── lib/                   # Utilities and helpers
-│   ├── api/               # API client
-│   ├── data/              # Data types and mock data
-│   └── utils.ts           # Utility functions
-└── public/                # Static assets
-
+├── app/                  # Next.js app router pages
+│   ├── page.tsx         # Dashboard home
+│   ├── settings/        # Settings page
+│   ├── model/           # Model metrics page
+│   ├── forecast/        # Forecast page
+│   ├── sectors/         # Sectors page
+│   ├── signals/         # Signals page
+│   ├── events/          # Events page
+│   └── custom-tracker/  # Custom tracker page
+├── components/          # React components
+│   ├── dashboard/       # Dashboard-specific components
+│   ├── ui/             # Reusable UI components
+│   ├── alerts/         # Alert components
+│   ├── charts/         # Chart components
+│   └── risk/           # Risk-related components
+├── hooks/              # Custom React hooks
+├── lib/                # Utility libraries
+│   └── api/           # API client
+└── public/            # Static assets
 ```
 
-## Color System
+## API Integration
 
-### Base Colors
-- **Primary**: Red `#df2531` (high risk, primary actions)
-- **Secondary**: Amber `#f59e0b` (medium risk)
-- **Success**: Green `#22c55e` (low risk)
+The app communicates with the backend through the centralized API client at `lib/api/client.ts`. All API calls should use this client for consistency.
 
-### Adaptive Text Classes
-- `.text-100` - Full brightness (white in dark, black in light)
-- `.text-70` - High visibility (70-80% opacity)
-- `.text-45` - Medium visibility (45-60% opacity)
-- `.text-25` - Low visibility (25-40% opacity)
+## Development Tips
 
-## Development Notes
-
-- All pages use `bg-background` for theme-aware backgrounds
-- Components use semantic Tailwind classes for theme adaptation
-- Theme state persists across page navigation
-- Offline mode activates automatically when backend is unavailable
-
-## Contributing
-
-When making changes:
-1. Ensure all new components support both themes
-2. Use semantic color classes (`bg-background`, `text-foreground`)
-3. Test in both dark and light modes
-4. Verify offline mode still works
-
-## License
-
-Part of the Tariff and Trade Shock Forecaster project.
+1. **Hot Reload**: Changes to code will automatically refresh the browser
+2. **Type Safety**: The project uses TypeScript - check `tsconfig.json` for config
+3. **Linting**: Run `npm run lint` to check for issues
+4. **Path Aliases**: Use `@/` to import from the root directory (e.g., `@/components/ui/button`)

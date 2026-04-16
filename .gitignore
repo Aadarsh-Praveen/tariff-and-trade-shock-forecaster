@@ -20,8 +20,9 @@ var/
 sdist/
 develop-eggs/
 .installed.cfg
-lib/
-lib64/
+# Python lib/ folder (but not frontend/lib/)
+/lib/
+/lib64/
 
 # ── Virtual environments ──────────────────────────────────────
 venv/
