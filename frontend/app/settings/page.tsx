@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Bell, Shield, Link2, RefreshCw, Check, AlertTriangle } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
+import { useToast } from '@/hooks/use-toast'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -20,6 +21,8 @@ const PURPLE = '#8b5cf6'
 const ORANGE = '#f97316'
 const YELLOW = '#eab308'
 const RED = '#ef4444'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 function RiskSlider({
   value, onChange, min, max, step, color,
@@ -46,6 +49,10 @@ function RiskSlider({
 }
 
 export default function SettingsPage() {
+  const { toast } = useToast()
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  
   const [criticalThreshold, setCriticalThreshold] = useState([75])
   const [highThreshold, setHighThreshold] = useState([50])
   const [mediumThreshold, setMediumThreshold] = useState([25])
@@ -57,6 +64,94 @@ export default function SettingsPage() {
   const [weeklyReport, setWeeklyReport] = useState(true)
 
   const [refreshInterval, setRefreshInterval] = useState('15')
+
+  // Load settings on mount
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/settings`)
+      .then(res => res.json())
+      .then(data => {
+        setCriticalThreshold([data.critical_threshold || 75])
+        setHighThreshold([data.high_threshold || 50])
+        setMediumThreshold([data.medium_threshold || 25])
+        setEmailAlerts(data.email_alerts ?? true)
+        setPushNotifications(data.push_notifications ?? true)
+        setCriticalOnly(data.critical_only ?? false)
+        setDailyDigest(data.daily_digest ?? true)
+        setWeeklyReport(data.weekly_report ?? true)
+        setRefreshInterval(String(data.refresh_interval || 15))
+      })
+      .catch(err => console.error('Failed to load settings:', err))
+  }, [])
+
+  const handleRefreshNow = async () => {
+    setIsRefreshing(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/settings/refresh`, {
+        method: 'POST',
+      })
+      const data = await response.json()
+      
+      if (response.ok) {
+        toast({
+          title: "Data Refreshed",
+          description: `Successfully refreshed ${data.weeks_loaded} weeks of data.`,
+        })
+      } else {
+        throw new Error(data.detail || 'Failed to refresh data')
+      }
+    } catch (error) {
+      toast({
+        title: "Refresh Failed",
+        description: error instanceof Error ? error.message : 'Could not refresh data',
+        variant: "destructive",
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true)
+    try {
+      const settings = {
+        refresh_interval: parseInt(refreshInterval),
+        critical_threshold: criticalThreshold[0],
+        high_threshold: highThreshold[0],
+        medium_threshold: mediumThreshold[0],
+        email_alerts: emailAlerts,
+        push_notifications: pushNotifications,
+        critical_only: criticalOnly,
+        daily_digest: dailyDigest,
+        weekly_report: weeklyReport,
+      }
+
+      const response = await fetch(`${API_BASE_URL}/settings/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      })
+      const data = await response.json()
+      
+      if (response.ok) {
+        toast({
+          title: "Settings Saved",
+          description: "Your preferences have been saved successfully.",
+        })
+      } else {
+        throw new Error(data.detail || 'Failed to save settings')
+      }
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : 'Could not save settings',
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const integrations = [
     { id: 'erp', name: 'SAP ERP', status: 'connected', lastSync: '2 min ago' },
@@ -288,8 +383,13 @@ export default function SettingsPage() {
               </Select>
             </div>
             <div className="flex gap-2">
-              <Button><RefreshCw className="mr-2 size-4" />Refresh Now</Button>
-              <Button variant="outline">Save Settings</Button>
+              <Button onClick={handleRefreshNow} disabled={isRefreshing}>
+                <RefreshCw className={`mr-2 size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh Now'}
+              </Button>
+              <Button variant="outline" onClick={handleSaveSettings} disabled={isSaving}>
+                {isSaving ? 'Saving...' : 'Save Settings'}
+              </Button>
             </div>
           </CardContent>
         </Card>

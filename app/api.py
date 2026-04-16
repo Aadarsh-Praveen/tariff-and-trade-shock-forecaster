@@ -2046,3 +2046,124 @@ def check_alerts():
         "triggered":           triggered,
         "checked_at":          datetime.now(UTC).isoformat(),
     }
+
+
+# ═══════════════════════════════════════════════════════════════
+# SETTINGS
+# ═══════════════════════════════════════════════════════════════
+
+# In-memory settings storage (fallback if database table doesn't exist)
+_settings_cache = {}
+
+class SettingsUpdate(BaseModel):
+    refresh_interval: Optional[int] = None
+    critical_threshold: Optional[int] = None
+    high_threshold: Optional[int] = None
+    medium_threshold: Optional[int] = None
+    email_alerts: Optional[bool] = None
+    push_notifications: Optional[bool] = None
+    critical_only: Optional[bool] = None
+    daily_digest: Optional[bool] = None
+    weekly_report: Optional[bool] = None
+
+
+@app.post("/settings/refresh", tags=["Settings"])
+def refresh_data():
+    """
+    Force refresh of cached data.
+    Clears the cache and reloads all predictions from the database.
+    """
+    global _df_cache, _proba_cache, _cache_ts
+    
+    old_cache_time = _cache_ts
+    _df_cache = None
+    _proba_cache = None
+    _cache_ts = None
+    
+    logger.info("Cache cleared - forcing data refresh")
+    
+    df, proba = get_data_and_predictions()
+    
+    return {
+        "status": "success",
+        "message": "Data refreshed successfully",
+        "weeks_loaded": len(df),
+        "previous_cache_age_seconds": (
+            round(datetime.now(UTC).timestamp() - old_cache_time, 2) 
+            if old_cache_time else None
+        ),
+        "refreshed_at": datetime.now(UTC).isoformat(),
+    }
+
+
+@app.post("/settings/update", tags=["Settings"])
+def update_settings(settings: SettingsUpdate):
+    """
+    Save user settings.
+    
+    Note: If the user_settings table doesn't exist, settings are stored in memory.
+    To persist settings across restarts, create the table using:
+        sql/create_user_settings_table.sql
+    """
+    global _settings_cache
+    
+    settings_dict = settings.dict(exclude_none=True)
+    if not settings_dict:
+        raise HTTPException(status_code=400, detail="No settings provided to update")
+    
+    settings_dict["user_id"] = "default"
+    settings_dict["updated_at"] = datetime.now(UTC).isoformat()
+    
+    # Try to save to database, fall back to in-memory storage
+    client = get_client()
+    storage_method = "database"
+    
+    try:
+        client.table("user_settings").upsert(
+            settings_dict,
+            on_conflict="user_id"
+        ).execute()
+    except Exception as e:
+        logger.warning(f"Could not save settings to database (using in-memory storage): {e}")
+        _settings_cache.update(settings_dict)
+        storage_method = "memory"
+    
+    return {
+        "status": "success",
+        "message": f"Settings saved successfully ({storage_method})",
+        "settings": settings_dict,
+        "saved_at": datetime.now(UTC).isoformat(),
+        "storage_method": storage_method,
+    }
+
+
+@app.get("/settings", tags=["Settings"])
+def get_settings():
+    """Retrieve current user settings."""
+    global _settings_cache
+    
+    default_settings = {
+        "refresh_interval": 15,
+        "critical_threshold": 75,
+        "high_threshold": 50,
+        "medium_threshold": 25,
+        "email_alerts": True,
+        "push_notifications": True,
+        "critical_only": False,
+        "daily_digest": True,
+        "weekly_report": True,
+    }
+    
+    # Try to load from database first
+    client = get_client()
+    settings = {}
+    
+    try:
+        resp = client.table("user_settings").select("*").eq("user_id", "default").execute()
+        if resp.data:
+            settings = resp.data[0]
+    except Exception as e:
+        logger.warning(f"Could not load settings from database (using in-memory/defaults): {e}")
+        settings = _settings_cache
+    
+    return {**default_settings, **settings}
