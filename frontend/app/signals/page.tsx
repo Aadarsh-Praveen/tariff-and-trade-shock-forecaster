@@ -28,28 +28,19 @@ export default function SignalsPage() {
   const [selectedSignal, setSelectedSignal] = useState('natural_gas_price')
   const [forecastData, setForecastData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchForecast() {
       try {
         setLoading(true)
+        setError(null)
         const data = await api.getSignalForecast(selectedSignal)
-        setForecastData(data.points)
+        setForecastData(data.points ?? [])
       } catch (err) {
-        if (!isBackendOffline(err)) console.error('Signal forecast error:', err)
-        const today = new Date(); const demoPoints = []
-        for (let i = 52; i >= 1; i--) {
-          const date = new Date(today); date.setDate(date.getDate() - i * 7)
-          const bv = 100 + Math.sin(i / 8) * 20 + Math.random() * 10
-          demoPoints.push({ forecast_date: date.toISOString().split('T')[0], yhat: bv, yhat_lower: bv - 5, yhat_upper: bv + 5, is_forecast: false })
-        }
-        const lv = demoPoints[demoPoints.length - 1].yhat
-        for (let i = 1; i <= 12; i++) {
-          const date = new Date(today); date.setDate(date.getDate() + i * 7)
-          const bv = lv + i * 0.5 + Math.random() * 5
-          demoPoints.push({ forecast_date: date.toISOString().split('T')[0], yhat: bv, yhat_lower: bv - 8, yhat_upper: bv + 8, is_forecast: true })
-        }
-        setForecastData(demoPoints)
+        if (!(await isBackendOffline())) console.error('Signal forecast error:', err)
+        setForecastData([])
+        setError('Could not load signal forecast from the API.')
       } finally { setLoading(false) }
     }
     fetchForecast()
@@ -64,6 +55,11 @@ export default function SignalsPage() {
       <DashboardHeader title="Signal Forecasts" description="Prophet time-series forecasting for key economic indicators" />
       
       <main className="flex-1 space-y-6 p-6">
+        {error && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
 
         {/* ═══ SIGNAL SELECTOR ═══ */}
         <Card className="border-border bg-card overflow-hidden">
@@ -252,7 +248,7 @@ export default function SignalsPage() {
 
         {/* ═══ STATS ═══ */}
         {forecastPoints.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-4 items-stretch">
             {(() => {
               const curVal = historicalData.length > 0 ? historicalData[historicalData.length - 1].yhat : null
               const fcVal = forecastPoints[forecastPoints.length - 1]?.yhat ?? null
@@ -269,7 +265,20 @@ export default function SignalsPage() {
               return stats.map((s: any) => {
                 const isChangeCard = s.label === 'Expected Change'
                 return (
-                  <Card key={s.label} className="border-border bg-card overflow-hidden">
+                  <div
+                    key={s.label}
+                    className="transition-all duration-300 ease-out h-full [&>*]:h-full"
+                    style={{ borderRadius: 'var(--radius)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)'
+                      e.currentTarget.style.boxShadow = `0 16px 40px ${s.color}25, 0 8px 20px rgba(0,0,0,0.25), 0 0 0 1px ${s.color}15`
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                      e.currentTarget.style.boxShadow = 'none'
+                    }}
+                  >
+                  <Card className="border-border bg-card overflow-hidden">
                     <div style={{
                       height: 3,
                       background: `linear-gradient(90deg, ${s.color}, ${s.color}40 50%, transparent)`,
@@ -291,6 +300,7 @@ export default function SignalsPage() {
                       {s.sub && <div className="text-xs text-muted-foreground mt-1">{s.sub}</div>}
                     </CardContent>
                   </Card>
+                  </div>
                 )
               })
             })()}

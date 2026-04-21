@@ -37,39 +37,23 @@ export default function SectorsPage() {
   const [overallScore, setOverallScore] = useState(0)
   const [overallLevel, setOverallLevel] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true)
+        setError(null)
         const data = await api.getSectorRisks()
         setSectors(data.sectors)
         setOverallScore(data.overall_risk_score)
         setOverallLevel(data.overall_risk_level)
       } catch (err) {
-        if (!isBackendOffline(err)) console.error('Sectors error:', err)
-        setSectors([
-          { sector: 'energy', label: 'Energy & Fuel Supply', risk_score: 75.2, risk_level: 'high',
-            top_signals: [
-              { feature: 'natural_gas_price_lag_1w', label: 'Natural gas (1w ago)', mean_abs_shap: 0.0271 },
-              { feature: 'crude_oil_price', label: 'Crude oil price', mean_abs_shap: 0.0189 },
-              { feature: 'energy_std_8w', label: 'Energy ETF volatility (8w)', mean_abs_shap: 0.0052 },
-            ]},
-          { sector: 'manufacturing', label: 'Manufacturing & Industrials', risk_score: 68.4, risk_level: 'high',
-            top_signals: [
-              { feature: 'copper', label: 'Copper price', mean_abs_shap: 0.0076 },
-              { feature: 'ppi_manufacturing', label: 'Manufacturing PPI', mean_abs_shap: 0.0043 },
-              { feature: 'capacity_utilization', label: 'Capacity utilization', mean_abs_shap: 0.0038 },
-            ]},
-          { sector: 'trade', label: 'Trade & Imports', risk_score: 71.8, risk_level: 'high',
-            top_signals: [
-              { feature: 'import_price_index', label: 'Import price index', mean_abs_shap: 0.0062 },
-              { feature: 'trade_balance_change_4w', label: 'Trade balance change (4w)', mean_abs_shap: 0.0049 },
-              { feature: 'goods_imports_pct_4w', label: 'Goods imports % change (4w)', mean_abs_shap: 0.0037 },
-            ]},
-        ])
-        setOverallScore(72.3)
-        setOverallLevel('high')
+        if (!(await isBackendOffline())) console.error('Sectors error:', err)
+        setSectors([])
+        setOverallScore(0)
+        setOverallLevel('')
+        setError('Could not load sector data from the API.')
       } finally {
         setLoading(false)
       }
@@ -96,6 +80,11 @@ export default function SectorsPage() {
       />
       
       <main className="flex-1 space-y-6 p-6">
+        {error && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
 
         {/* ═══ OVERALL RISK ═══ */}
         <Card className="border-border bg-card overflow-hidden relative">
@@ -197,7 +186,7 @@ export default function SectorsPage() {
 
                   {/* Top Signals */}
                   <div className="pt-4 border-t border-border">
-                    <h4 className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground mb-3">Top Driving Signals</h4>
+                    <h4 className="text-xs uppercase tracking-wider font-semibold text-foreground mb-3">Top Driving Signals</h4>
                     <div className="space-y-3">
                       {sector.top_signals.map((signal, i) => {
                         const barWidth = (signal.mean_abs_shap / maxShap) * 100
@@ -205,7 +194,7 @@ export default function SectorsPage() {
                           <div key={i}>
                             <div className="flex items-center justify-between text-xs mb-1">
                               <span className="text-foreground font-medium">{signal.label}</span>
-                              <span className="font-mono text-muted-foreground">
+                              <span className="font-mono text-foreground px-2 py-0.5 rounded-md" style={{ backgroundColor: 'rgba(128,128,128,0.1)' }}>
                                 {signal.mean_abs_shap.toFixed(4)}
                               </span>
                             </div>
@@ -229,7 +218,7 @@ export default function SectorsPage() {
                   {/* Comparison to overall */}
                   <div className="pt-4 border-t border-border">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">vs. Overall Risk</span>
+                      <span className="text-foreground">vs. Overall Risk</span>
                       <span style={{
                         fontWeight: 700,
                         color: diffColor,
@@ -266,7 +255,7 @@ export default function SectorsPage() {
               <CardTitle className="text-foreground text-base">Sector Risk Methodology</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+          <CardContent className="space-y-3 text-sm text-foreground leading-relaxed">
             <p>
               Sector risk scores are derived from <strong className="text-foreground">SHAP (SHapley Additive exPlanations)</strong> values,
               which quantify each feature's contribution to the model's prediction.
@@ -295,7 +284,7 @@ export default function SectorsPage() {
                       </div>
                       {item.title}
                     </h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+                    <p className="text-xs text-foreground leading-relaxed">{item.desc}</p>
                   </div>
                 )
               })}

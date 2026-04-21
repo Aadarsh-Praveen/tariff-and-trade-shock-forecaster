@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, Check, Eye, Clock, AlertTriangle, CheckCircle, Info, X } from 'lucide-react'
-import { alerts } from '@/lib/data/mock-data'
+import type { Alert as AlertType } from '@/lib/data/types'
+import { fetchDerivedAlerts } from '@/lib/risk-alerts'
 import { formatRelativeTime } from '@/lib/data/utils'
 import { cn } from '@/lib/utils'
 import {
@@ -34,12 +35,27 @@ const severityColors = {
 export function NotificationDropdown() {
   const router = useRouter()
   const { unreadAlertCount, setUnreadAlertCount } = useDashboard()
-  const [localAlerts, setLocalAlerts] = useState(alerts.slice(0, 10))
+  const [localAlerts, setLocalAlerts] = useState<AlertType[]>([])
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const alerts = await fetchDerivedAlerts()
+        if (!cancelled) setLocalAlerts(alerts.slice(0, 12))
+      } catch {
+        if (!cancelled) setLocalAlerts([])
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Update unread count when alerts change
   useEffect(() => {
-    const unreadCount = localAlerts.filter(a => !a.isRead).length
+    const unreadCount = localAlerts.filter((a) => !a.isRead).length
     setUnreadAlertCount(unreadCount)
   }, [localAlerts, setUnreadAlertCount])
 

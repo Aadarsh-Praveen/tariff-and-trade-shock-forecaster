@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Bell, CheckCircle, Clock, AlertTriangle, Mail, Lightbulb } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { AlertFeed } from '@/components/alerts/alert-feed'
@@ -12,7 +12,8 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog'
-import { alerts as initialAlerts } from '@/lib/data/mock-data'
+import { fetchDerivedAlerts } from '@/lib/risk-alerts'
+import { api } from '@/lib/api/client'
 import type { Alert, RiskSeverity, RiskCategory } from '@/lib/data/types'
 
 const CORAL = '#df2531'
@@ -22,7 +23,33 @@ const BLUE = '#6366f1'
 const PURPLE = '#8b5cf6'
 
 export default function AlertsPage() {
-  const [localAlerts, setLocalAlerts] = useState<Alert[]>(initialAlerts)
+  const [localAlerts, setLocalAlerts] = useState<Alert[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        setLoading(true)
+        const alerts = await fetchDerivedAlerts()
+        if (!cancelled) {
+          setLocalAlerts(alerts)
+          setLoadError(null)
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setLocalAlerts([])
+          setLoadError('Could not load alerts from the API. Ensure the backend is running.')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
   const [severityFilter, setSeverityFilter] = useState<RiskSeverity | 'all'>('all')
   const [categoryFilter, setCategoryFilter] = useState<RiskCategory | 'all'>('all')
   const [tab, setTab] = useState<'all' | 'unread' | 'acknowledged'>('all')
@@ -54,19 +81,22 @@ export default function AlertsPage() {
 
   const handleSubscribe = async () => {
     try {
-      const response = await fetch('http://localhost:8000/alerts/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, threshold: parseInt(threshold), commodities: 'all', frequency: 'weekly' }),
+      const data = await api.subscribeToAlerts({
+        email,
+        threshold: parseInt(threshold, 10),
+        commodities: 'all',
+        frequency: 'weekly',
       })
-      if (response.ok) {
-        const data = await response.json()
-        setSubscriptionStatus(`✓ Subscribed! ${data.message}`)
-        setTimeout(() => { setSubscriptionOpen(false); setSubscriptionStatus(null); setEmail(''); }, 3000)
-      } else {
-        setSubscriptionStatus('Failed to subscribe. Please try again.')
-      }
-    } catch { setSubscriptionStatus('Error: Could not connect to API') }
+      const msg = (data as { message?: string }).message ?? 'You are subscribed.'
+      setSubscriptionStatus(`✓ Subscribed! ${msg}`)
+      setTimeout(() => {
+        setSubscriptionOpen(false)
+        setSubscriptionStatus(null)
+        setEmail('')
+      }, 3000)
+    } catch {
+      setSubscriptionStatus('Error: Could not connect to API')
+    }
   }
 
   const stats = useMemo(() => {
@@ -83,16 +113,48 @@ export default function AlertsPage() {
     { icon: CheckCircle, label: 'Acknowledged', value: stats.acknowledged, color: GREEN },
   ]
 
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background">
+        <DashboardHeader title="Alerts & Notifications" description="Monitor and respond to risk alerts" />
+        <main className="flex-1 flex items-center justify-center p-6">
+          <p className="text-muted-foreground text-sm">Loading alerts from API…</p>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <DashboardHeader title="Alerts & Notifications" description="Monitor and respond to risk alerts" />
 
       <main className="flex-1 space-y-6 p-6">
+        {loadError && (
+          <div
+            className="rounded-lg border px-4 py-3 text-sm"
+            style={{ borderColor: `${CORAL}40`, backgroundColor: `${CORAL}08`, color: CORAL }}
+          >
+            {loadError}
+          </div>
+        )}
 
         {/* ═══ STATS ═══ */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
           {STAT_CARDS.map((s) => (
-            <Card key={s.label} className="border-border bg-card overflow-hidden">
+            <div
+              key={s.label}
+              className="transition-all duration-300 ease-out h-full [&>*]:h-full"
+              style={{ borderRadius: 'var(--radius)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)'
+                e.currentTarget.style.boxShadow = `0 16px 40px ${s.color}25, 0 8px 20px rgba(0,0,0,0.25), 0 0 0 1px ${s.color}15`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+            <Card className="border-border bg-card overflow-hidden">
               <div style={{ height: 3, background: `linear-gradient(90deg, ${s.color}, ${s.color}00)` }} />
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -110,6 +172,7 @@ export default function AlertsPage() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           ))}
         </div>
 

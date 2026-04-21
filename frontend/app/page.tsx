@@ -9,6 +9,7 @@ import { RiskTrendChart } from '@/components/risk/risk-trend-chart'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { api, DashboardSummary, isBackendOffline } from '@/lib/api/client'
+import { useDashboard } from '@/components/dashboard/dashboard-context'
 
 const CORAL = '#df2531'
 const AMBER = '#f59e0b'
@@ -28,7 +29,9 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { timeRange } = useDashboard()
 
+  // Fetch data once on mount
   useEffect(() => {
     async function fetchData() {
       try {
@@ -37,13 +40,13 @@ export default function DashboardPage() {
         setData(summary)
         setError(null)
       } catch (err) {
-        if (!isBackendOffline(err)) console.error('Dashboard error:', err)
+        if (!(await isBackendOffline())) console.error('Dashboard error:', err)
         setError('Unable to connect to backend API. Please ensure the server is running at http://127.0.0.1:8000')
         setData(null)
       } finally { setLoading(false) }
     }
     fetchData()
-  }, [])
+  }, []) // Only fetch once on mount
 
   if (loading) {
     return (
@@ -79,6 +82,15 @@ export default function DashboardPage() {
   const trendUp = data.trend.direction === 'rising'
   const trendDown = data.trend.direction === 'falling'
 
+  // Filter history based on selected time range
+  const filteredHistory = data.history.filter((h) => {
+    const date = new Date(h.date)
+    const now = new Date()
+    const monthsAgo = new Date(now)
+    monthsAgo.setMonth(monthsAgo.getMonth() - timeRange.months)
+    return date >= monthsAgo
+  })
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <DashboardHeader title="Dashboard" description="Supply chain disruption risk overview" />
@@ -92,33 +104,35 @@ export default function DashboardPage() {
         )}
 
         {/* ═══ STATS ROW ═══ */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard
-            title="Current Risk Score"
-            value={data.current.risk_score.toFixed(1)}
-            change={data.trend.change_4w}
-            changeLabel="vs 4 weeks ago"
-            icon={<AlertTriangle className="size-5" />}
-            accentColor="coral"
-          />
-          <StatsCard
-            title="Disruption Probability"
-            value={`${(data.current.disruption_probability * 100).toFixed(1)}%`}
-            icon={<Activity className="size-5" />}
-            accentColor="amber"
-          />
-          <StatsCard
-            title="Trend Direction"
-            value={data.trend.direction.charAt(0).toUpperCase() + data.trend.direction.slice(1)}
-            icon={<TrendingUp className="size-5" />}
-            accentColor={trendUp ? 'coral' : 'green'}
-          />
-          <StatsCard
-            title="Model Precision"
-            value={`${(data.meta.model_precision * 100).toFixed(1)}%`}
-            icon={<Building2 className="size-5" />}
-            accentColor="blue"
-          />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 items-stretch">
+          {[
+            { title: 'Current Risk Score', value: data.current.risk_score.toFixed(1), change: data.trend.change_4w, changeLabel: 'vs 4 weeks ago', icon: <AlertTriangle className="size-5" />, accentColor: 'coral' as const, hoverColor: CORAL },
+            { title: 'Disruption Probability', value: `${(data.current.disruption_probability * 100).toFixed(1)}%`, icon: <Activity className="size-5" />, accentColor: 'amber' as const, hoverColor: AMBER },
+            { title: 'Trend Direction', value: data.trend.direction.charAt(0).toUpperCase() + data.trend.direction.slice(1), icon: <TrendingUp className="size-5" />, accentColor: (trendUp ? 'coral' : 'green') as any, hoverColor: trendUp ? CORAL : GREEN },
+            { title: 'Model Precision', value: `${(data.meta.model_precision * 100).toFixed(1)}%`, icon: <Building2 className="size-5" />, accentColor: 'blue' as const, hoverColor: BLUE },
+          ].map((card) => (
+            <div
+              key={card.title}
+              className="transition-all duration-300 ease-out h-full [&>*]:h-full"
+              style={{ borderRadius: 'var(--radius)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)'
+                e.currentTarget.style.boxShadow = `0 16px 40px ${card.hoverColor}25, 0 8px 20px rgba(0,0,0,0.25), 0 0 0 1px ${card.hoverColor}15`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              <StatsCard
+                title={card.title}
+                value={card.value}
+                {...(card.change !== undefined ? { change: card.change, changeLabel: card.changeLabel } : {})}
+                icon={card.icon}
+                accentColor={card.accentColor}
+              />
+            </div>
+          ))}
         </div>
 
         {/* ═══ MAIN CONTENT ═══ */}
@@ -204,7 +218,9 @@ export default function DashboardPage() {
                         </div>
                         <span className="text-[12px] text-foreground font-medium">{signal.label}</span>
                       </div>
-                      <span className="text-[10px] text-muted-foreground font-mono">{signal.feature}</span>
+                      <span className="text-xs text-foreground font-mono px-2 py-1 rounded-md" style={{ backgroundColor: 'rgba(128,128,128,0.1)' }}>
+                        {signal.feature}
+                      </span>
                     </div>
                   )
                 })}
@@ -247,7 +263,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ═══ RISK HISTORY CHART ═══ */}
-        {data.history.length > 0 && (
+        {filteredHistory.length > 0 && (
           <Card className="border-border bg-card overflow-hidden">
             <div style={{ height: 3, background: `linear-gradient(90deg, ${AMBER}, ${AMBER}00)` }} />
             <CardHeader>
@@ -261,13 +277,13 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <CardTitle className="text-foreground text-base">Risk History</CardTitle>
-                  <CardDescription className="text-xs mt-0.5">Risk score over the past {data.history.length} weeks</CardDescription>
+                  <CardDescription className="text-xs mt-0.5">Risk score over the past {filteredHistory.length} weeks ({timeRange.label})</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <RiskTrendChart
-                data={data.history.map(h => ({
+                data={filteredHistory.map(h => ({
                   month: h.date,
                   overallScore: h.risk_score,
                   financialScore: 75,
@@ -285,24 +301,41 @@ export default function DashboardPage() {
         )}
 
         {/* ═══ MODEL INFO FOOTER ═══ */}
-        <Card className="border-border bg-card overflow-hidden">
-          <div style={{ height: 3, background: `linear-gradient(90deg, ${BLUE}, ${GREEN}40 50%, transparent)` }} />
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              {[
-                { value: data.meta.features_count, label: 'Features Engineered', color: CORAL },
-                { value: data.meta.data_sources, label: 'Data Sources', color: AMBER },
-                { value: data.meta.training_weeks, label: 'Training Weeks', color: BLUE },
-                { value: `${(data.meta.model_recall * 100).toFixed(0)}%`, label: 'Recall Rate', color: GREEN },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <div className="text-[22px] font-bold tabular-nums" style={{ color: stat.color }}>{stat.value}</div>
-                  <div className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { value: data.meta.features_count, label: 'ML Features', color: CORAL, icon: <Activity className="size-4" /> },
+            { value: data.meta.data_sources, label: 'Data Sources', color: AMBER, icon: <BarChart3 className="size-4" /> },
+            { value: `${data.meta.training_weeks} wks`, label: 'Training Data', color: BLUE, icon: <TrendingUp className="size-4" /> },
+            { value: `${(data.meta.model_recall * 100).toFixed(0)}%`, label: 'Detection Rate', color: GREEN, icon: <Building2 className="size-4" /> },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="flex items-center gap-3 rounded-xl p-4 border border-border bg-card transition-all duration-300 ease-out"
+              style={{ cursor: 'default' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)'
+                e.currentTarget.style.boxShadow = `0 8px 24px ${stat.color}20, 0 0 0 1px ${stat.color}15`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              <div style={{
+                width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: `${stat.color}12`, border: `1px solid ${stat.color}20`,
+                color: stat.color,
+              }}>
+                {stat.icon}
+              </div>
+              <div>
+                <div className="text-lg font-bold tabular-nums text-foreground">{stat.value}</div>
+                <div className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">{stat.label}</div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
       </main>
     </div>
   )

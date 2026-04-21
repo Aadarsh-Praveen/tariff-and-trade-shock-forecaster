@@ -52,25 +52,23 @@ export default function EventsPage() {
     risk_score: number
   } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [eventsError, setEventsError] = useState<string | null>(null)
+  const [shapError, setShapError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchEvents() {
       try {
         setLoading(true)
+        setEventsError(null)
         const data = await api.getNamedEvents()
         setEvents(data.events)
         if (data.events.length > 0) setSelectedEvent(data.events[0])
+        else setSelectedEvent(null)
       } catch (err) {
-        if (!isBackendOffline(err)) console.error('Events error:', err)
-        const demoEvents: HistoricalEvent[] = [
-          { date: '2020-03-20', event: 'COVID-19 peak supply shock', period: 'Feb–Jun 2020', risk_score: 84.5, risk_level: 'high', actual_date: '2020-03-20' },
-          { date: '2021-03-26', event: 'Suez Canal blockage', period: 'Mar–Apr 2021', risk_score: 78.2, risk_level: 'high', actual_date: '2021-03-26' },
-          { date: '2022-03-04', event: 'Ukraine invasion — week 1', period: 'Feb–Jun 2022', risk_score: 89.3, risk_level: 'high', actual_date: '2022-03-04' },
-          { date: '2022-10-07', event: 'Port congestion crisis peak', period: 'Sep–Dec 2022', risk_score: 76.8, risk_level: 'high', actual_date: '2022-10-07' },
-          { date: '2025-03-07', event: '2025 tariff wave', period: 'Jan 2025–present', risk_score: 72.3, risk_level: 'high', actual_date: '2025-03-07' },
-        ]
-        setEvents(demoEvents)
-        if (demoEvents.length > 0) setSelectedEvent(demoEvents[0])
+        if (!(await isBackendOffline())) console.error('Events error:', err)
+        setEvents([])
+        setSelectedEvent(null)
+        setEventsError('Could not load events from the API.')
       } finally {
         setLoading(false)
       }
@@ -81,30 +79,15 @@ export default function EventsPage() {
   useEffect(() => {
     if (!selectedEvent) return
     async function fetchShap() {
+      setShapData(null)
       try {
+        setShapError(null)
         const data = await api.getShapWaterfall(selectedEvent!.date, 12)
         setShapData({ features: data.features, base_value: data.base_value, prediction: data.prediction, risk_score: data.risk_score })
       } catch (err) {
-        if (!isBackendOffline(err)) console.error('SHAP error:', err)
-        setShapData({
-          features: [
-            { feature: 'natural_gas_price_lag_1w', label: 'Natural gas (1w ago)', shap_value: 0.0727, feature_value: 3.42, direction: 'increases_risk' },
-            { feature: 'copper', label: 'Copper price', shap_value: 0.0459, feature_value: 4.18, direction: 'increases_risk' },
-            { feature: 'natural_gas_price_std_4w', label: 'Natural gas volatility (4w)', shap_value: 0.0403, feature_value: 0.89, direction: 'increases_risk' },
-            { feature: 'import_price_index', label: 'Import price index', shap_value: 0.0312, feature_value: 128.4, direction: 'increases_risk' },
-            { feature: 'trade_balance_change_4w', label: 'Trade balance change (4w)', shap_value: 0.0161, feature_value: -2.3, direction: 'increases_risk' },
-            { feature: 'energy_std_8w', label: 'Energy ETF volatility (8w)', shap_value: 0.0158, feature_value: 0.67, direction: 'increases_risk' },
-            { feature: 'crude_oil_price', label: 'Crude oil price', shap_value: -0.0084, feature_value: 78.2, direction: 'decreases_risk' },
-            { feature: 'ppi_manufacturing', label: 'Manufacturing PPI', shap_value: -0.0051, feature_value: 112.3, direction: 'decreases_risk' },
-            { feature: 'capacity_utilization', label: 'Capacity utilization', shap_value: 0.0047, feature_value: 76.8, direction: 'increases_risk' },
-            { feature: 'goods_imports', label: 'Goods imports', shap_value: 0.0038, feature_value: 245.6, direction: 'increases_risk' },
-            { feature: 'cpi_all', label: 'CPI (all items)', shap_value: -0.0032, feature_value: 298.4, direction: 'decreases_risk' },
-            { feature: 'aluminum_zscore_8w', label: 'Aluminum z-score (8w)', shap_value: 0.0027, feature_value: 1.2, direction: 'increases_risk' },
-          ],
-          base_value: 0.35,
-          prediction: 0.723,
-          risk_score: selectedEvent!.risk_score,
-        })
+        if (!(await isBackendOffline())) console.error('SHAP error:', err)
+        setShapData(null)
+        setShapError('Could not load SHAP waterfall for this date.')
       }
     }
     fetchShap()
@@ -129,6 +112,11 @@ export default function EventsPage() {
       />
       
       <main className="flex-1 space-y-6 p-6">
+        {eventsError && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {eventsError}
+          </div>
+        )}
 
         {/* ═══ EVENT TIMELINE ═══ */}
         <Card className="border-border bg-card overflow-hidden">
@@ -188,7 +176,7 @@ export default function EventsPage() {
                           <div className="font-semibold text-[13px] leading-snug text-foreground truncate">
                             {event.event}
                           </div>
-                          <div className="text-[11px] text-muted-foreground mt-1">{event.period}</div>
+                          <div className="text-xs text-foreground mt-1">{event.period}</div>
                         </div>
                         {/* Score badge */}
                         <div style={{
@@ -213,7 +201,7 @@ export default function EventsPage() {
                           backgroundColor: color,
                           boxShadow: `0 0 6px ${color}60`,
                         }} />
-                        <span className="text-[10px] font-medium text-muted-foreground tabular-nums">{event.date}</span>
+                        <span className="text-xs font-medium text-foreground tabular-nums">{event.date}</span>
                       </div>
                     </div>
                   </button>
@@ -222,6 +210,12 @@ export default function EventsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {selectedEvent && shapError && !shapData && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {shapError}
+          </div>
+        )}
 
         {/* ═══ SELECTED EVENT ═══ */}
         {selectedEvent && shapData && (
@@ -296,16 +290,16 @@ export default function EventsPage() {
                     </h2>
                                           <div className="flex items-center gap-4 mt-3">
                       <div className="flex items-center gap-2">
-                        <Calendar className="size-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{selectedEvent.period}</span>
+                        <Calendar className="size-3.5 text-foreground" />
+                        <span className="text-xs text-foreground">{selectedEvent.period}</span>
                       </div>
                       <div className="w-px h-3.5 bg-border" />
-                      <span className="text-xs font-mono text-muted-foreground">{selectedEvent.date}</span>
+                      <span className="text-xs font-mono text-foreground">{selectedEvent.date}</span>
                     </div>
                     {/* Score bar */}
                     <div className="mt-4" style={{ maxWidth: 280 }}>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Risk Score</span>
+                        <span className="text-xs text-foreground uppercase tracking-wider font-semibold">Risk Score</span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: riskHex(selectedEvent.risk_level), fontVariantNumeric: 'tabular-nums' }}>
                           {selectedEvent.risk_score.toFixed(1)} / 100
                         </span>
@@ -432,12 +426,12 @@ export default function EventsPage() {
                   <div className="flex items-center gap-2.5">
                     <div className="w-4 h-4 rounded" style={{ backgroundColor: CORAL }} />
                     <TrendingUp className="size-4" style={{ color: CORAL }} />
-                    <span className="text-muted-foreground">Increases Risk</span>
+                    <span className="text-foreground">Increases Risk</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <div className="w-4 h-4 rounded" style={{ backgroundColor: GREEN }} />
                     <TrendingDown className="size-4" style={{ color: GREEN }} />
-                    <span className="text-muted-foreground">Decreases Risk</span>
+                    <span className="text-foreground">Decreases Risk</span>
                   </div>
                 </div>
 
@@ -449,7 +443,7 @@ export default function EventsPage() {
                     { label: 'Risk Score', value: shapData.risk_score.toFixed(1), color: riskHex(selectedEvent.risk_level) },
                   ].map((stat) => (
                     <div key={stat.label} className="text-center">
-                      <div className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground mb-2">{stat.label}</div>
+                      <div className="text-xs uppercase tracking-wider font-semibold text-foreground mb-2">{stat.label}</div>
                       <div
                         className="text-2xl font-bold tabular-nums"
                         style={{ color: stat.color || undefined }}
@@ -467,19 +461,32 @@ export default function EventsPage() {
             </Card>
 
             {/* ═══ TOP 3 DRIVERS ═══ */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-3 items-stretch">
               {shapData.features.slice(0, 3).map((feature, i) => {
                 const isUp = feature.direction === 'increases_risk'
                 const driverColor = isUp ? CORAL : GREEN
                 return (
-                  <Card key={i} className="border-border bg-card overflow-hidden">
+                  <div
+                    key={i}
+                    className="transition-all duration-300 ease-out h-full [&>*]:h-full"
+                    style={{ borderRadius: 'var(--radius)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)'
+                      e.currentTarget.style.boxShadow = `0 16px 40px ${driverColor}25, 0 8px 20px rgba(0,0,0,0.25), 0 0 0 1px ${driverColor}15`
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                      e.currentTarget.style.boxShadow = 'none'
+                    }}
+                  >
+                  <Card className="border-border bg-card overflow-hidden">
                     <div style={{
                       height: 3,
                       background: `linear-gradient(90deg, ${driverColor}, ${driverColor}00)`,
                     }} />
                     <CardHeader className="pb-2">
                       <CardTitle className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">#{i + 1} Driver</span>
+                        <span className="text-sm font-semibold text-foreground">#{i + 1} Driver</span>
                         <span style={{
                           fontSize: 10,
                           fontWeight: 700,
@@ -497,11 +504,11 @@ export default function EventsPage() {
                       <div className="space-y-3">
                         <div>
                           <div className="text-lg font-semibold text-foreground">{feature.label}</div>
-                          <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{feature.feature}</div>
+                          <div className="text-xs font-mono text-foreground mt-0.5">{feature.feature}</div>
                         </div>
                         <div className="space-y-2 pt-3 border-t border-border">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">SHAP Impact</span>
+                            <span className="text-xs uppercase tracking-wider font-semibold text-foreground">SHAP Impact</span>
                             <span
                               className="text-sm font-bold font-mono"
                               style={{ color: driverColor }}
@@ -510,8 +517,8 @@ export default function EventsPage() {
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Feature Value</span>
-                            <span className="text-sm font-mono text-muted-foreground">{feature.feature_value.toFixed(4)}</span>
+                            <span className="text-xs uppercase tracking-wider font-semibold text-foreground">Feature Value</span>
+                            <span className="text-sm font-mono text-foreground">{feature.feature_value.toFixed(4)}</span>
                           </div>
                           {/* Mini impact bar */}
                           <div style={{
@@ -534,6 +541,7 @@ export default function EventsPage() {
                       </div>
                     </CardContent>
                   </Card>
+                  </div>
                 )
               })}
             </div>
@@ -563,7 +571,7 @@ export default function EventsPage() {
               <CardTitle className="text-foreground">What is SHAP?</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+          <CardContent className="space-y-4 text-sm text-foreground leading-relaxed">
             <p>
               <strong className="text-foreground">SHAP (SHapley Additive exPlanations)</strong> is a unified approach to explain
               the output of any machine learning model. It connects optimal credit allocation with local explanations using
