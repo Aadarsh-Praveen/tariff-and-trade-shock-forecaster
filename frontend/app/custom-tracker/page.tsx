@@ -32,30 +32,24 @@ export default function CustomTrackerPage() {
   const [overallRisk, setOverallRisk] = useState<number | null>(null)
   const [topSignals, setTopSignals] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [commodityError, setCommodityError] = useState<string | null>(null)
+  const [riskError, setRiskError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchCommodities() {
       try {
-        const data = await api.listCommodities()
-        setCommodities(data.commodities)
-        setSelected(['copper', 'natural_gas', 'crude_oil'])
+        setCommodityError(null)
+        const data = await api.getCommoditiesList()
+        const list = data.commodities ?? []
+        setCommodities(list)
+        const keys = list.map((c: Commodity) => c.key)
+        const preferred = ['copper', 'natural_gas', 'crude_oil'].filter((k) => keys.includes(k))
+        setSelected(preferred.length > 0 ? preferred : keys.slice(0, 3))
       } catch (err) {
-        if (!isBackendOffline(err)) console.error('Commodities error:', err)
-        setCommodities([
-          { key: 'copper', label: 'Copper' },
-          { key: 'natural_gas', label: 'Natural Gas' },
-          { key: 'crude_oil', label: 'Crude Oil' },
-          { key: 'wheat', label: 'Wheat' },
-          { key: 'aluminum', label: 'Aluminum' },
-          { key: 'import_prices', label: 'Import Prices' },
-          { key: 'trade_balance', label: 'Trade Balance' },
-          { key: 'energy_sector', label: 'Energy Sector' },
-          { key: 'industrials', label: 'Industrials' },
-          { key: 'manufacturing', label: 'Manufacturing' },
-          { key: 'cpi', label: 'CPI' },
-          { key: 'materials', label: 'Materials' },
-        ])
-        setSelected(['copper', 'natural_gas', 'crude_oil'])
+        if (!(await isBackendOffline())) console.error('Commodities error:', err)
+        setCommodities([])
+        setSelected([])
+        setCommodityError('Could not load commodities from the API.')
       }
     }
     fetchCommodities()
@@ -66,25 +60,19 @@ export default function CustomTrackerPage() {
     async function fetchCustomRisk() {
       try {
         setLoading(true)
-        const data = await api.getCustomRisk(selected, 4)
+        setRiskError(null)
+        const data = await api.getCustomRisk(selected.join(','), 4)
         setCustomRisk(data.custom_risk_score)
         setCustomLevel(data.custom_risk_level)
         setOverallRisk(data.overall_risk_score)
         setTopSignals(data.top_signals)
       } catch (err) {
-        if (!isBackendOffline(err)) console.error('Custom risk error:', err)
-        const baseRisk = 72.3
-        const adj = selected.length > 6 ? -5 : selected.length > 3 ? -3 : 0
-        setCustomRisk(baseRisk + adj)
-        setCustomLevel(baseRisk + adj > 65 ? 'high' : 'medium')
-        setOverallRisk(baseRisk)
-        setTopSignals([
-          { feature: 'copper', label: 'Copper price', mean_abs_shap: 0.0076 },
-          { feature: 'natural_gas_price_lag_1w', label: 'Natural gas (1w ago)', mean_abs_shap: 0.0271 },
-          { feature: 'crude_oil_price', label: 'Crude oil price', mean_abs_shap: 0.0189 },
-          { feature: 'import_price_index', label: 'Import price index', mean_abs_shap: 0.0062 },
-          { feature: 'trade_balance_change_4w', label: 'Trade balance change (4w)', mean_abs_shap: 0.0049 },
-        ])
+        if (!(await isBackendOffline())) console.error('Custom risk error:', err)
+        setCustomRisk(null)
+        setCustomLevel('')
+        setOverallRisk(null)
+        setTopSignals([])
+        setRiskError('Could not load custom risk from the API.')
       } finally { setLoading(false) }
     }
     fetchCustomRisk()
@@ -104,6 +92,16 @@ export default function CustomTrackerPage() {
       />
       
       <main className="flex-1 space-y-6 p-6">
+        {commodityError && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {commodityError}
+          </div>
+        )}
+        {riskError && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {riskError}
+          </div>
+        )}
 
         {/* ═══ COMMODITY SELECTION ═══ */}
         <Card className="border-border bg-card overflow-hidden">
@@ -151,7 +149,7 @@ export default function CustomTrackerPage() {
                       </div>
                     )}
                     <span style={isActive ? { color: AMBER, fontWeight: 600 } : undefined}
-                      className={isActive ? '' : 'text-muted-foreground'}>
+                      className={isActive ? '' : 'text-foreground'}>
                       {commodity.label}
                     </span>
                   </button>
@@ -200,7 +198,7 @@ export default function CustomTrackerPage() {
               <CardContent className="relative flex flex-col items-center justify-center pb-6 space-y-4">
                 <RiskScoreGauge score={customRisk} size="lg" />
                 <div className="text-center">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-foreground">
                     Risk Level:{' '}
                     <span style={{
                       fontWeight: 700,
@@ -245,7 +243,7 @@ export default function CustomTrackerPage() {
               <CardContent className="relative flex flex-col items-center justify-center pb-6 space-y-4">
                 <RiskScoreGauge score={overallRisk} size="lg" />
                 <div className="text-center">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-foreground">
                     Difference:{' '}
                     {(() => {
                       const diff = customRisk - overallRisk
@@ -313,7 +311,7 @@ export default function CustomTrackerPage() {
                         </div>
                         <div>
                           <div className="text-sm font-medium text-foreground">{signal.label}</div>
-                          <div className="text-[10px] font-mono text-muted-foreground">{signal.feature}</div>
+                          <div className="text-xs font-mono text-foreground">{signal.feature}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -333,7 +331,7 @@ export default function CustomTrackerPage() {
                           <div className="text-sm font-mono font-medium" style={{ color: rankColor }}>
                             {signal.mean_abs_shap.toFixed(5)}
                           </div>
-                          <div className="text-[10px] text-muted-foreground">SHAP value</div>
+                          <div className="text-xs text-foreground">SHAP value</div>
                         </div>
                       </div>
                     </div>
@@ -405,7 +403,7 @@ export default function CustomTrackerPage() {
               <CardTitle className="text-foreground text-base">How Custom Risk Scoring Works</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+          <CardContent className="space-y-3 text-sm text-foreground leading-relaxed">
             <p>
               Your custom risk score is calculated by analyzing <strong className="text-foreground">SHAP contributions</strong> from
               features related to your selected commodities only.
@@ -419,7 +417,7 @@ export default function CustomTrackerPage() {
               influenced primarily by copper prices, natural gas volatility, and related downstream indicators like
               manufacturing PPI and energy sector performance.
             </p>
-            <div className="pt-3 border-t border-border text-xs text-muted-foreground">
+            <div className="pt-3 border-t border-border text-xs text-foreground">
               <strong className="text-foreground">Available commodities:</strong>{' '}
               {commodities.map(cm => cm.label).join(', ')}
             </div>

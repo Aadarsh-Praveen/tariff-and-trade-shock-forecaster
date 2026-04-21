@@ -102,3 +102,7 @@ Desktop.ini
 !models/feature_columns.json
 !models/metrics.json
 !models/shap_narrative.md
+
+
+
+*.tsbuildinfo

@@ -10,26 +10,26 @@
 /* DEFAULT: Dark Mode — purple-red tinted near-black */
 :root {
   --background: hsl(270 35% 4%);
-  --foreground: hsl(270 27% 93%);
+  --foreground: hsl(270 27% 95%);
   --card: hsl(270 25% 8%);
-  --card-foreground: hsl(270 27% 93%);
+  --card-foreground: hsl(270 27% 95%);
   --popover: hsl(270 25% 8%);
-  --popover-foreground: hsl(270 27% 93%);
+  --popover-foreground: hsl(270 27% 95%);
 
   --primary: hsl(8 77% 61%);
-  --primary-foreground: hsl(270 27% 93%);
+  --primary-foreground: hsl(270 27% 95%);
 
   --secondary: hsl(270 20% 12%);
-  --secondary-foreground: hsl(270 27% 93%);
+  --secondary-foreground: hsl(270 27% 95%);
 
   --muted: hsl(270 25% 8%);
-  --muted-foreground: hsl(270 27% 75%);
+  --muted-foreground: hsl(270 15% 88%);
 
   --accent: hsl(8 77% 61%);
-  --accent-foreground: hsl(270 27% 93%);
+  --accent-foreground: hsl(270 27% 95%);
 
   --destructive: hsl(8 77% 61%);
-  --destructive-foreground: hsl(270 27% 93%);
+  --destructive-foreground: hsl(270 27% 95%);
 
   --border: hsl(0 0% 100% / 0.10);
   --input: hsl(270 28% 7%);
@@ -51,11 +51,11 @@
   --radius: 0.8125rem;
 
   --sidebar: hsl(270 35% 4%);
-  --sidebar-foreground: hsl(270 27% 93%);
+  --sidebar-foreground: hsl(270 27% 95%);
   --sidebar-primary: hsl(8 77% 61%);
-  --sidebar-primary-foreground: hsl(270 27% 93%);
+  --sidebar-primary-foreground: hsl(270 27% 95%);
   --sidebar-accent: hsl(270 20% 12%);
-  --sidebar-accent-foreground: hsl(270 27% 93%);
+  --sidebar-accent-foreground: hsl(270 27% 95%);
   --sidebar-border: hsl(0 0% 100% / 0.10);
   --sidebar-ring: hsl(8 77% 61%);
 }
@@ -63,20 +63,20 @@
 /* LIGHT MODE — cool blue-gray surfaces */
 .light {
   --background: hsl(220 25% 96%);
-  --foreground: hsl(220 43% 4%);
+  --foreground: hsl(220 43% 6%);
   --card: hsl(0 0% 100%);
-  --card-foreground: hsl(220 43% 4%);
+  --card-foreground: hsl(220 43% 6%);
   --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(220 43% 4%);
+  --popover-foreground: hsl(220 43% 6%);
 
   --primary: hsl(6 61% 51%);
   --primary-foreground: hsl(0 0% 100%);
 
   --secondary: hsl(220 20% 93%);
-  --secondary-foreground: hsl(220 43% 4%);
+  --secondary-foreground: hsl(220 43% 6%);
 
   --muted: hsl(220 20% 93%);
-  --muted-foreground: hsl(220 15% 40%);
+  --muted-foreground: hsl(220 20% 25%);
 
   --accent: hsl(6 61% 51%);
   --accent-foreground: hsl(0 0% 100%);
@@ -104,7 +104,7 @@
   --radius: 0.8125rem;
 
   --sidebar: hsl(220 29% 97%);
-  --sidebar-foreground: hsl(220 43% 4%);
+  --sidebar-foreground: hsl(220 43% 6%);
   --sidebar-primary: hsl(6 61% 51%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
   --sidebar-accent: hsl(220 20% 93%);
@@ -192,7 +192,39 @@
   button { color: inherit; transition: all 0.15s ease; }
   button svg, a svg { color: currentColor; }
   a, input, select, textarea { color: inherit; transition: all 0.15s ease; }
+
+  /* Hide native search clear button — component has its own */
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
   [role="progressbar"] { transition: width 0.4s ease; }
+
+  /* Global readability — bump tiny text and improve contrast */
+  p, span, label, td, th, li, div {
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Bump small font sizes for readability */
+  .text-\[10px\] { font-size: 11px; line-height: 1.5; }
+  .text-\[11px\] { font-size: 12px; line-height: 1.5; }
+  .text-\[12px\] { font-size: 13px; line-height: 1.5; }
+  .text-xs { font-size: 13px; line-height: 1.5; }
+  .text-sm { font-size: 14px; line-height: 1.5; }
+
+  /* CardDescription gets a boost */
+  [data-slot="card-description"] {
+    color: var(--muted-foreground);
+    font-size: 13px;
+  }
+
+  /* Ensure uppercase labels are readable */
+  .uppercase.tracking-wider,
+  .uppercase.tracking-wide {
+    font-size: max(11px, inherit);
+    letter-spacing: 0.8px;
+  }
 }
 
 @layer utilities {
@@ -258,13 +290,13 @@
   .text-purple { color: var(--risk-purple); }
 
   .text-100, .text-t1 { color: var(--foreground); }
-  .text-70, .text-t2 { color: color-mix(in srgb, var(--foreground) 65%, transparent); }
+  .text-70, .text-t2 { color: color-mix(in srgb, var(--foreground) 85%, transparent); }
   .text-45, .text-t3 { color: var(--muted-foreground); }
-  .text-25, .text-t4 { color: color-mix(in srgb, var(--muted-foreground) 50%, transparent); }
+  .text-25, .text-t4 { color: color-mix(in srgb, var(--muted-foreground) 80%, transparent); }
 
-  .light .text-70, .light .text-t2 { color: color-mix(in srgb, var(--foreground) 85%, transparent); }
+  .light .text-70, .light .text-t2 { color: color-mix(in srgb, var(--foreground) 95%, transparent); }
   .light .text-45, .light .text-t3 { color: var(--muted-foreground); }
-  .light .text-25, .light .text-t4 { color: color-mix(in srgb, var(--muted-foreground) 60%, transparent); }
+  .light .text-25, .light .text-t4 { color: color-mix(in srgb, var(--muted-foreground) 85%, transparent); }
 
   .bg-red-4 { background-color: color-mix(in srgb, var(--risk-high) 4%, transparent); }
   .bg-red-8 { background-color: color-mix(in srgb, var(--risk-high) 8%, transparent); }

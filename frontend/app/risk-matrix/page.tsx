@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Filter } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { RiskMatrix } from '@/components/risk/risk-matrix'
 import { RiskEventDetail } from '@/components/risk/risk-event-detail'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -15,36 +14,56 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { riskEvents, suppliers } from '@/lib/data/mock-data'
-import type { RiskEvent, RiskCategory, RiskSeverity, SupplierTier } from '@/lib/data/types'
+import { fetchRiskMatrixEvents } from '@/lib/risk-events-from-api'
+import type { RiskEvent, RiskCategory, RiskSeverity } from '@/lib/data/types'
 
 export default function RiskMatrixPage() {
+  const [events, setEvents] = useState<RiskEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<RiskEvent | null>(null)
   const [categoryFilter, setCategoryFilter] = useState<RiskCategory | 'all'>('all')
   const [severityFilter, setSeverityFilter] = useState<RiskSeverity | 'all'>('all')
-  const [tierFilter, setTierFilter] = useState<SupplierTier | 'all'>('all')
-  
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        setLoading(true)
+        const ev = await fetchRiskMatrixEvents()
+        if (!cancelled) {
+          setEvents(ev)
+          setLoadError(null)
+        }
+      } catch {
+        if (!cancelled) {
+          setEvents([])
+          setLoadError('Could not load events from the API.')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const filteredEvents = useMemo(() => {
-    return riskEvents.filter((event) => {
+    return events.filter((event) => {
       if (categoryFilter !== 'all' && event.type !== categoryFilter) return false
       if (severityFilter !== 'all' && event.severity !== severityFilter) return false
-      if (tierFilter !== 'all') {
-        const supplier = suppliers.find((s) => s.id === event.supplierId)
-        if (supplier && supplier.category !== tierFilter) return false
-      }
       return true
     })
-  }, [categoryFilter, severityFilter, tierFilter])
-  
-  const activeFilters = [categoryFilter, severityFilter, tierFilter].filter((f) => f !== 'all').length
-  
+  }, [events, categoryFilter, severityFilter])
+
+  const activeFilters = [categoryFilter, severityFilter].filter((f) => f !== 'all').length
+
   const clearFilters = () => {
     setCategoryFilter('all')
     setSeverityFilter('all')
-    setTierFilter('all')
   }
-  
-  // Summary stats
+
   const stats = useMemo(() => {
     const critical = filteredEvents.filter((e) => e.severity === 'critical').length
     const high = filteredEvents.filter((e) => e.severity === 'high').length
@@ -52,23 +71,36 @@ export default function RiskMatrixPage() {
     const low = filteredEvents.filter((e) => e.severity === 'low').length
     return { critical, high, medium, low, total: filteredEvents.length }
   }, [filteredEvents])
-  
+
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background">
+        <DashboardHeader title="Risk Matrix" description="Likelihood vs Impact analysis" />
+        <main className="flex-1 flex items-center justify-center p-6">
+          <p className="text-muted-foreground text-sm">Loading API events…</p>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <DashboardHeader
-        title="Risk Matrix"
-        description="Likelihood vs Impact analysis"
-      />
-      
+      <DashboardHeader title="Risk Matrix" description="Named disruptions & comparison events (API)" />
+
       <main className="flex-1 space-y-6 p-6">
-        {/* Filters */}
+        {loadError && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {loadError}
+          </div>
+        )}
+
         <Card>
           <CardContent className="flex flex-wrap items-center gap-4 p-4">
             <div className="flex items-center gap-2">
               <Filter className="size-4 text-muted-foreground" />
               <span className="text-sm font-medium">Filters</span>
             </div>
-            
+
             <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as RiskCategory | 'all')}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Category" />
@@ -81,7 +113,7 @@ export default function RiskMatrixPage() {
                 <SelectItem value="compliance">Compliance</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Select value={severityFilter} onValueChange={(v) => setSeverityFilter(v as RiskSeverity | 'all')}>
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Severity" />
@@ -94,25 +126,13 @@ export default function RiskMatrixPage() {
                 <SelectItem value="low">Low</SelectItem>
               </SelectContent>
             </Select>
-            
-            <Select value={tierFilter} onValueChange={(v) => setTierFilter(v as SupplierTier | 'all')}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Supplier Tier" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Tiers</SelectItem>
-                <SelectItem value="Tier 1">Tier 1</SelectItem>
-                <SelectItem value="Tier 2">Tier 2</SelectItem>
-                <SelectItem value="Tier 3">Tier 3</SelectItem>
-              </SelectContent>
-            </Select>
-            
+
             {activeFilters > 0 && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 Clear ({activeFilters})
               </Button>
             )}
-            
+
             <div className="ml-auto flex items-center gap-3">
               <div className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-full bg-risk-critical" />
@@ -133,14 +153,13 @@ export default function RiskMatrixPage() {
             </div>
           </CardContent>
         </Card>
-        
-        {/* Matrix and Details */}
+
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Risk Assessment Matrix</CardTitle>
               <CardDescription>
-                {stats.total} risk events plotted by likelihood and impact
+                {stats.total} events from /shap/events and /risk/compare/events/list
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -151,13 +170,12 @@ export default function RiskMatrixPage() {
               />
             </CardContent>
           </Card>
-          
+
           <div className="lg:col-span-1">
             <RiskEventDetail event={selectedEvent} />
           </div>
         </div>
-        
-        {/* Legend */}
+
         <Card>
           <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
             <div className="flex items-center gap-6">
@@ -181,9 +199,7 @@ export default function RiskMatrixPage() {
                 </div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Click on dots to view event details
-            </p>
+            <p className="text-xs text-muted-foreground">Click dots to view details</p>
           </CardContent>
         </Card>
       </main>
